@@ -124,6 +124,7 @@ export default function Hotels() {
   let filtered = hotels
     .filter(h => !city || h.city?.toLowerCase().includes(city.toLowerCase()))
     .filter(h => (h.rating || 0) >= minRating)
+    .filter(h => (h.price || 0) <= maxPrice)
     .map(h => {
       const coords = CITY_COORDS[h.city];
       const distance = (userLocation && coords)
@@ -140,25 +141,25 @@ export default function Hotels() {
   const mapCenter = userLocation || { lat: 20.5937, lng: 78.9629 };
 
   return (
-    <div style={{ paddingTop:70, minHeight:"100vh", background:"#F9FAFB" }}>
+    <div style={{ paddingTop:70, minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       {/* Sticky search/filter bar */}
-      <div style={{ background:"white", borderBottom:"1px solid #E5E7EB", padding:"14px 0", position:"sticky", top:70, zIndex:100, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+      <div style={{ background:"var(--surface)", borderBottom:"1px solid var(--border)", padding:"14px 0", position:"sticky", top:70, zIndex:100, boxShadow:"var(--shadow-sm)" }}>
         <div className="container" style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <div style={{ flex:1, minWidth:180, position:"relative" }}>
-            <Search size={15} style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#9CA3AF", pointerEvents:"none" }}/>
+            <Search size={15} style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text3)", pointerEvents:"none" }}/>
             <input value={city} onChange={e => setCity(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
               placeholder="Search by city..."
-              style={{ width:"100%", padding:"10px 16px 10px 36px", border:"1.5px solid #E5E7EB", borderRadius:99, fontSize:14, outline:"none" }}
-              onFocus={e=>e.target.style.borderColor="#FF385C"} onBlur={e=>e.target.style.borderColor="#E5E7EB"}/>
+              style={{ width:"100%", padding:"10px 16px 10px 36px", border:"1.5px solid var(--border)", borderRadius:99, fontSize:14, outline:"none", background:"var(--surface)", color:"var(--text)" }}
+              onFocus={e=>e.target.style.borderColor="var(--primary)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
           </div>
 
-          <button onClick={handleSearch} style={{ padding:"10px 20px", background:"#FF385C", color:"white", border:"none", borderRadius:99, fontWeight:700, fontSize:14, cursor:"pointer" }}>
+          <button onClick={handleSearch} style={{ padding:"10px 20px", background:"var(--primary)", color:"white", border:"none", borderRadius:99, fontWeight:700, fontSize:14, cursor:"pointer" }}>
             Search
           </button>
 
           <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-            style={{ padding:"10px 16px", border:"1.5px solid #E5E7EB", borderRadius:99, fontSize:14, outline:"none", background:"white", cursor:"pointer" }}>
+            style={{ padding:"10px 16px", border:"1.5px solid var(--border)", borderRadius:99, fontSize:14, outline:"none", background:"var(--surface)", color:"var(--text)", cursor:"pointer" }}>
             <option value="rating">⭐ Top Rated</option>
             <option value="price-asc">💰 Price: Low → High</option>
             <option value="price-desc">💎 Price: High → Low</option>
@@ -166,13 +167,13 @@ export default function Hotels() {
           </select>
 
           <button onClick={() => setFiltersOpen(o => !o)}
-            style={{ display:"flex", alignItems:"center", gap:7, padding:"10px 18px", border:"1.5px solid", borderColor: filtersOpen?"#FF385C":"#E5E7EB", borderRadius:99, background: filtersOpen?"#FFF1F2":"white", fontSize:14, fontWeight:600, cursor:"pointer", color: filtersOpen?"#FF385C":"#374151" }}>
+            style={{ display:"flex", alignItems:"center", gap:7, padding:"10px 18px", border:"1.5px solid", borderColor: filtersOpen?"var(--primary)":"var(--border)", borderRadius:99, background: filtersOpen?"var(--surface2)":"var(--surface)", fontSize:14, fontWeight:600, cursor:"pointer", color: filtersOpen?"var(--primary)":"var(--text2)" }}>
             <SlidersHorizontal size={15}/> Filters
           </button>
 
-          <div style={{ display:"flex", border:"1.5px solid #E5E7EB", borderRadius:99, overflow:"hidden" }}>
+          <div style={{ display:"flex", border:"1.5px solid var(--border)", borderRadius:99, overflow:"hidden" }}>
             {[["grid","⊞ Grid"],["map","🗺 Map"]].map(([v,l]) => (
-              <button key={v} onClick={() => setViewMode(v)} style={{ padding:"9px 16px", background: viewMode===v?"#111827":"white", color: viewMode===v?"white":"#6B7280", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, transition:"all .2s" }}>{l}</button>
+              <button key={v} onClick={() => setViewMode(v)} style={{ padding:"9px 16px", background: viewMode===v?"var(--text)":"var(--surface)", color: viewMode===v?"white":"var(--text2)", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, transition:"all .2s" }}>{l}</button>
             ))}
           </div>
         </div>
@@ -180,24 +181,24 @@ export default function Hotels() {
         {/* Filter panel */}
         {filtersOpen && (
           <div className="container" style={{ paddingTop:14 }}>
-            <div style={{ background:"#F9FAFB", borderRadius:12, padding:20, display:"flex", gap:32, flexWrap:"wrap", alignItems:"flex-end" }}>
+            <div style={{ background:"var(--surface2)", border:"1px solid var(--border)", borderRadius:12, padding:20, display:"flex", gap:32, flexWrap:"wrap", alignItems:"flex-end" }}>
               <div style={{ minWidth:200 }}>
-                <label style={{ fontSize:13, fontWeight:700, display:"block", marginBottom:8 }}>Max Price: ₹{maxPrice.toLocaleString()}</label>
+                <label style={{ fontSize:13, fontWeight:700, display:"block", marginBottom:8, color:"var(--text)" }}>Max Price: ₹{maxPrice.toLocaleString()}</label>
                 <input type="range" min={500} max={30000} step={500} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} style={{ width:"100%" }}/>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#9CA3AF", marginTop:4 }}><span>₹500</span><span>₹30,000</span></div>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"var(--text3)", marginTop:4 }}><span>₹500</span><span>₹30,000</span></div>
               </div>
               <div>
-                <label style={{ fontSize:13, fontWeight:700, display:"block", marginBottom:8 }}>Min Rating</label>
+                <label style={{ fontSize:13, fontWeight:700, display:"block", marginBottom:8, color:"var(--text)" }}>Min Rating</label>
                 <div style={{ display:"flex", gap:8 }}>
                   {[0,3,4,4.5].map(r => (
-                    <button key={r} onClick={() => setMinRating(r)} style={{ padding:"7px 14px", borderRadius:99, border:"1.5px solid", borderColor: minRating===r?"#FF385C":"#E5E7EB", background: minRating===r?"#FFF1F2":"white", color: minRating===r?"#FF385C":"#6B7280", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                    <button key={r} onClick={() => setMinRating(r)} style={{ padding:"7px 14px", borderRadius:99, border:"1.5px solid", borderColor: minRating===r?"var(--primary)":"var(--border)", background: minRating===r?"var(--surface2)":"var(--surface)", color: minRating===r?"var(--primary)":"var(--text2)", fontSize:13, fontWeight:600, cursor:"pointer" }}>
                       {r===0 ? "All" : r+"★"}
                     </button>
                   ))}
                 </div>
               </div>
               <button onClick={() => { setMaxPrice(25000); setMinRating(0); setCity(""); setSortBy("rating"); loadHotels(); }}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 18px", borderRadius:99, border:"1.5px solid #E5E7EB", background:"white", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 18px", borderRadius:99, border:"1.5px solid var(--border)", background:"var(--surface)", color:"var(--text)", fontSize:13, fontWeight:600, cursor:"pointer" }}>
                 <X size={13}/> Reset
               </button>
             </div>
@@ -207,15 +208,15 @@ export default function Hotels() {
 
       <div className="container" style={{ paddingTop:28, paddingBottom:64 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-          <p style={{ fontSize:15, color:"#6B7280" }}>
-            Showing <strong style={{ color:"#111827" }}>{filtered.length}</strong> hotel{filtered.length !== 1 ? "s" : ""}
+          <p style={{ fontSize:15, color:"var(--text2)" }}>
+            Showing <strong style={{ color:"var(--text)" }}>{filtered.length}</strong> hotel{filtered.length !== 1 ? "s" : ""}
             {city ? ` in "${city}"` : ""}
           </p>
         </div>
 
         {/* MAP VIEW */}
         {viewMode === "map" && (
-          <div style={{ height:580, borderRadius:18, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,0.12)", marginBottom:32 }}>
+          <div style={{ height:580, borderRadius:18, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,0,0,0.12)", marginBottom:32, border:"1px solid var(--border)" }}>
             <MapContainer center={[mapCenter.lat, mapCenter.lng]} zoom={5} style={{ height:"100%", width:"100%" }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap"/>
               {filtered.filter(h => h.lat && h.lng).map(h => (
@@ -224,12 +225,12 @@ export default function Hotels() {
                     <div style={{ textAlign:"center", minWidth:160, fontFamily:"DM Sans,sans-serif" }}>
                       <img src={h.imageUrl || "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300&q=60"} style={{ width:"100%", height:80, objectFit:"cover", borderRadius:6, marginBottom:8 }}/>
                       <div style={{ fontWeight:700, fontSize:14, marginBottom:2 }}>{h.name}</div>
-                      <div style={{ fontSize:12, color:"#6B7280", marginBottom:6 }}>📍 {h.city}, {h.state}</div>
+                      <div style={{ fontSize:12, color:"var(--text2)", marginBottom:6 }}>📍 {h.city}, {h.state}</div>
                       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, alignItems:"center" }}>
-                        <span style={{ fontWeight:700, fontSize:14, color:"#FF385C" }}>₹{(h.price||2000).toLocaleString()}/night</span>
+                        <span style={{ fontWeight:700, fontSize:14, color:"var(--primary)" }}>₹{(h.price||2000).toLocaleString()}/night</span>
                         <span style={{ color:"#FFB400", fontSize:13 }}>★ {h.rating || "—"}</span>
                       </div>
-                      <button onClick={() => navigate(`/rooms/${h.id}`)} style={{ width:"100%", padding:"7px", background:"#FF385C", color:"white", border:"none", borderRadius:6, fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                      <button onClick={() => navigate(`/rooms/${h.id}`)} style={{ width:"100%", padding:"7px", background:"var(--primary)", color:"white", border:"none", borderRadius:6, fontWeight:700, fontSize:13, cursor:"pointer" }}>
                         Book Now
                       </button>
                     </div>
@@ -246,7 +247,7 @@ export default function Hotels() {
             {loading ? (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:24 }}>
                 {[1,2,3,4,5,6].map(i => (
-                  <div key={i} style={{ borderRadius:14, overflow:"hidden", border:"1px solid #E5E7EB", background:"white" }}>
+                  <div key={i} style={{ borderRadius:14, overflow:"hidden", border:"1px solid var(--border)", background:"var(--surface)" }}>
                     <div className="skeleton" style={{ height:220 }}/>
                     <div style={{ padding:18 }}>
                       <div className="skeleton" style={{ height:12, width:"50%", marginBottom:10 }}/>
@@ -257,10 +258,10 @@ export default function Hotels() {
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign:"center", padding:"80px 24px", background:"white", borderRadius:16, border:"1px solid #E5E7EB" }}>
+              <div style={{ textAlign:"center", padding:"80px 24px", background:"var(--surface)", borderRadius:16, border:"1px solid var(--border)" }}>
                 <div style={{ fontSize:56, marginBottom:16 }}>🔍</div>
-                <h3 style={{ fontSize:22, fontWeight:700, marginBottom:8 }}>No hotels found</h3>
-                <p style={{ color:"#6B7280", marginBottom:20 }}>Try adjusting your filters or search a different city</p>
+                <h3 style={{ fontSize:22, fontWeight:700, marginBottom:8, color:"var(--text)" }}>No hotels found</h3>
+                <p style={{ color:"var(--text2)", marginBottom:20 }}>Try adjusting your filters or search a different city</p>
                 <button onClick={() => { setCity(""); loadHotels(); }} className="btn btn-primary btn-sm">Clear Search</button>
               </div>
             ) : (
@@ -269,7 +270,7 @@ export default function Hotels() {
                   const isFav = wishlist.some(f => f.id === hotel.id);
                   return (
                     <div key={hotel.id} onClick={() => navigate(`/rooms/${hotel.id}`)}
-                      style={{ borderRadius:14, overflow:"hidden", background:"white", border:"1px solid #E5E7EB", cursor:"pointer", transition:"all .25s", animation:`fadeUp .4s ease both`, animationDelay:`${idx*0.04}s` }}
+                      style={{ borderRadius:14, overflow:"hidden", background:"var(--surface)", border:"1px solid var(--border)", cursor:"pointer", transition:"all .25s", animation:`fadeUp .4s ease both`, animationDelay:`${idx*0.04}s` }}
                       onMouseEnter={e => { e.currentTarget.style.transform="translateY(-5px)"; e.currentTarget.style.boxShadow="0 16px 48px rgba(0,0,0,0.12)"; }}
                       onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
                       <div style={{ position:"relative", height:220, overflow:"hidden" }}>
@@ -278,30 +279,30 @@ export default function Hotels() {
                           onMouseEnter={e => e.target.style.transform="scale(1.07)"}
                           onMouseLeave={e => e.target.style.transform="none"}/>
                         <button onClick={e => toggleWish(hotel, e)}
-                          style={{ position:"absolute", top:10, right:10, width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, transition:"transform .2s", boxShadow:"0 2px 8px rgba(0,0,0,0.12)" }}
+                          style={{ position:"absolute", top:10, right:10, width:36, height:36, borderRadius:"50%", background:"var(--surface)", border:"1px solid var(--border)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, transition:"transform .2s", boxShadow:"0 2px 8px rgba(0,0,0,0.12)" }}
                           onMouseEnter={e => e.currentTarget.style.transform="scale(1.15)"}
                           onMouseLeave={e => e.currentTarget.style.transform="none"}>
                           {isFav ? "❤️" : "🤍"}
                         </button>
                         {hotel.rating >= 4.8 && (
-                          <span style={{ position:"absolute", top:10, left:10, background:"#FF385C", color:"white", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:99 }}>⭐ Top Rated</span>
+                          <span style={{ position:"absolute", top:10, left:10, background:"var(--primary)", color:"white", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:99 }}>⭐ Top Rated</span>
                         )}
                       </div>
                       <div style={{ padding:18 }}>
-                        <div style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:4, marginBottom:4 }}>
+                        <div style={{ fontSize:12, color:"var(--text2)", display:"flex", alignItems:"center", gap:4, marginBottom:4 }}>
                           <MapPin size={11}/> {hotel.city}{hotel.state ? `, ${hotel.state}` : ""}
-                          {hotel.distance != null && <span style={{ marginLeft:"auto", color:"#3B82F6", fontWeight:600, fontSize:11 }}>📍 {hotel.distance}km</span>}
+                          {hotel.distance != null && <span style={{ marginLeft:"auto", color:"var(--primary)", fontWeight:600, fontSize:11 }}>📍 {hotel.distance}km</span>}
                         </div>
-                        <h3 style={{ fontSize:17, fontWeight:700, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{hotel.name}</h3>
+                        <h3 style={{ fontSize:17, fontWeight:700, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"var(--text)" }}>{hotel.name}</h3>
                         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
                           <StarRow r={hotel.rating}/>
-                          <span style={{ fontSize:13, fontWeight:700 }}>{hotel.rating || "—"}</span>
+                          <span style={{ fontSize:13, fontWeight:700, color:"var(--text)" }}>{hotel.rating || "—"}</span>
                         </div>
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:14, borderTop:"1px solid #F3F4F6" }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:14, borderTop:"1px solid var(--border)" }}>
                           <div>
-                            <span style={{ fontSize:11, color:"#9CA3AF" }}>from </span>
-                            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700 }}>₹{(hotel.price || 2000).toLocaleString()}</span>
-                            <span style={{ fontSize:12, color:"#6B7280" }}>/night</span>
+                            <span style={{ fontSize:11, color:"var(--text3)" }}>from </span>
+                            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:"var(--text)" }}>₹{(hotel.price || 2000).toLocaleString()}</span>
+                            <span style={{ fontSize:12, color:"var(--text2)" }}>/night</span>
                           </div>
                           <span style={{ fontSize:12, color:"#10B981", fontWeight:600 }}>✓ Free cancel</span>
                         </div>
@@ -314,17 +315,17 @@ export default function Hotels() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:40 }}>
+              <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:40, flexWrap:"wrap" }}>
                 <button onClick={() => setPage(p => Math.max(0,p-1))} disabled={page===0}
-                  style={{ padding:"9px 18px", border:"1.5px solid #E5E7EB", borderRadius:99, background:"white", fontSize:14, fontWeight:600, cursor:"pointer", opacity: page===0?0.4:1 }}>← Prev</button>
+                  style={{ padding:"9px 18px", border:"1.5px solid var(--border)", borderRadius:99, background:"var(--surface)", color:"var(--text)", fontSize:14, fontWeight:600, cursor:"pointer", opacity: page===0?0.4:1 }}>← Prev</button>
                 {Array.from({ length: totalPages }, (_,i) => (
                   <button key={i} onClick={() => setPage(i)}
-                    style={{ padding:"9px 16px", border:"1.5px solid", borderColor: page===i?"#FF385C":"#E5E7EB", borderRadius:99, background: page===i?"#FFF1F2":"white", color: page===i?"#FF385C":"#374151", fontSize:14, fontWeight:600, cursor:"pointer" }}>
+                    style={{ padding:"9px 16px", border:"1.5px solid", borderColor: page===i?"var(--primary)":"var(--border)", borderRadius:99, background: page===i?"var(--surface2)":"var(--surface)", color: page===i?"var(--primary)":"var(--text2)", fontSize:14, fontWeight:600, cursor:"pointer" }}>
                     {i+1}
                   </button>
                 ))}
                 <button onClick={() => setPage(p => Math.min(totalPages-1,p+1))} disabled={page===totalPages-1}
-                  style={{ padding:"9px 18px", border:"1.5px solid #E5E7EB", borderRadius:99, background:"white", fontSize:14, fontWeight:600, cursor:"pointer", opacity: page===totalPages-1?0.4:1 }}>Next →</button>
+                  style={{ padding:"9px 18px", border:"1.5px solid var(--border)", borderRadius:99, background:"var(--surface)", color:"var(--text)", fontSize:14, fontWeight:600, cursor:"pointer", opacity: page===totalPages-1?0.4:1 }}>Next →</button>
               </div>
             )}
           </>

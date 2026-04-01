@@ -37,7 +37,7 @@ function AppInner() {
 function AppRoutes() {
   return (
     <>
-      <ConditionalNavbar />
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/hotels" element={<Hotels />} />
@@ -54,21 +54,21 @@ function AppRoutes() {
         <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
 
         <Route path="*" element={
-          <div style={{ paddingTop:70, minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16, background:"#F9FAFB" }}>
-            <div style={{ fontSize:72 }}>🏨</div>
-            <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:36, fontWeight:700 }}>Page Not Found</h1>
-            <p style={{ color:"#6B7280" }}>The page you're looking for doesn't exist.</p>
-            <a href="/" style={{ padding:"12px 28px", background:"#FF385C", color:"white", borderRadius:99, fontWeight:700, textDecoration:"none", marginTop:8 }}>Go Home</a>
+          <div style={{
+            paddingTop:70, minHeight:"100vh",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            flexDirection:"column", gap:16,
+            background:"var(--bg)", color:"var(--text)",
+          }}>
+            <div style={{ fontSize:72 }}>&#127968;</div>
+            <h1 style={{ fontFamily:"var(--font-serif)", fontSize:36, fontWeight:400, color:"var(--text)" }}>Page Not Found</h1>
+            <p style={{ color:"var(--text2)" }}>The page you're looking for doesn't exist.</p>
+            <a href="/" style={{ padding:"12px 28px", background:"var(--primary)", color:"white", borderRadius:"var(--radius-pill)", fontWeight:700, textDecoration:"none", marginTop:8 }}>Go Home</a>
           </div>
         } />
       </Routes>
     </>
   );
-}
-
-function ConditionalNavbar() {
-  // Show navbar everywhere except full-screen admin
-  return <Navbar />;
 }
 
 export default function App() {

@@ -8,7 +8,7 @@ const pwStrength = (pw) => {
   let s = 0;
   if (pw.length >= 6)           s++;
   if (pw.length >= 10)          s++;
-  if (/[A-Z]/.test(pw))        s++;
+  if (/[A-Z]/.test(pw))         s++;
   if (/[0-9!@#$%^&*]/.test(pw)) s++;
   return Math.min(s, 4);
 };
@@ -22,10 +22,12 @@ const StrengthBar = ({ pw }) => {
     <div style={{ marginTop:8 }}>
       <div style={{ display:"flex", gap:4, marginBottom:4 }}>
         {[1,2,3,4].map(i => (
-          <div key={i} style={{ flex:1, height:4, borderRadius:99, background: i<=s ? colors[s] : "#E5E7EB", transition:"all .3s" }}/>
+          <div key={i} style={{ flex:1, height:4, borderRadius:99, background: i<=s ? colors[s] : "var(--border)", transition:"all .3s" }}/>
         ))}
       </div>
-      <span style={{ fontSize:12, color:colors[s], fontWeight:600 }}>Password strength: {labels[s]}</span>
+      <span style={{ fontSize:12, color:colors[s], fontWeight:600 }}>
+        Password strength: {labels[s]}
+      </span>
     </div>
   );
 };
@@ -58,7 +60,6 @@ export default function Signup() {
     if (!validate()) return;
     setLoading(true);
     try {
-      // POST /auth/register → ApiResponse<UserResponseDTO>
       await API.post("/auth/register", {
         name:     form.name.trim(),
         email:    form.email.trim(),
@@ -79,10 +80,14 @@ export default function Signup() {
       {/* Left visual */}
       <div style={{ position:"relative", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:"url(https://images.unsplash.com/photo-1551882547-ff40c4a49f67?w=800&q=80)", backgroundSize:"cover", backgroundPosition:"center" }}/>
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg, rgba(17,24,39,0.9) 0%, rgba(0,166,153,0.3) 100%)" }}/>
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg, rgba(17,24,39,0.9) 0%, rgba(14,165,233,0.3) 100%)" }}/>
         <div style={{ position:"relative", zIndex:1, color:"white", maxWidth:400, padding:60 }}>
-          <Link to="/" style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:900, color:"#FF385C", display:"block", marginBottom:44 }}>Stay<span style={{ color:"white" }}>Lux</span></Link>
-          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:40, fontWeight:900, lineHeight:1.15, marginBottom:20 }}>Start your<br/>journey with<br/>us today.</h2>
+          <Link to="/" style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:900, color:"var(--primary)", display:"block", marginBottom:44 }}>
+            SmartStay <span style={{ color:"white" }}>Vizag</span>
+          </Link>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:40, fontWeight:900, lineHeight:1.15, marginBottom:20 }}>
+            Start your<br/>journey with<br/>us today.
+          </h2>
           <div style={{ display:"flex", flexDirection:"column", gap:14, marginTop:36 }}>
             {["Free account — no credit card required","Access 10,000+ verified hotels","Exclusive member deals & early offers","24/7 dedicated customer support"].map(t => (
               <div key={t} style={{ display:"flex", alignItems:"center", gap:12 }}>
@@ -97,18 +102,27 @@ export default function Signup() {
       </div>
 
       {/* Right form */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px 40px", background:"white", overflowY:"auto" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px 40px", background:"var(--surface)", overflowY:"auto" }}>
         <div style={{ width:"100%", maxWidth:420 }}>
-          <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, fontWeight:700, marginBottom:8 }}>Create your account</h1>
-          <p style={{ color:"#6B7280", marginBottom:32, fontSize:15 }}>Free forever. No credit card needed.</p>
+          <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, fontWeight:700, marginBottom:8, color:"var(--text)" }}>
+            Create your account
+          </h1>
+          <p style={{ color:"var(--text2)", marginBottom:32, fontSize:15 }}>
+            Free forever. No credit card needed.
+          </p>
 
           {/* Name */}
           <div className="form-group">
             <label className="form-label">Full Name</label>
             <div className="input-wrap">
               <span className="input-icon-l"><User size={16}/></span>
-              <input type="text" value={form.name} onChange={setField("name")} placeholder="Arjun Mehta"
-                className={`form-control has-icon-l ${errors.name ? "error" : ""}`}/>
+              <input
+                type="text"
+                value={form.name}
+                onChange={setField("name")}
+                placeholder="Arjun Mehta"
+                className={`form-control has-icon-l ${errors.name ? "error" : ""}`}
+              />
             </div>
             {errors.name && <div className="form-error">⚠ {errors.name}</div>}
           </div>
@@ -118,8 +132,13 @@ export default function Signup() {
             <label className="form-label">Email Address</label>
             <div className="input-wrap">
               <span className="input-icon-l"><Mail size={16}/></span>
-              <input type="email" value={form.email} onChange={setField("email")} placeholder="you@example.com"
-                className={`form-control has-icon-l ${errors.email ? "error" : ""}`}/>
+              <input
+                type="email"
+                value={form.email}
+                onChange={setField("email")}
+                placeholder="you@example.com"
+                className={`form-control has-icon-l ${errors.email ? "error" : ""}`}
+              />
             </div>
             {errors.email && <div className="form-error">⚠ {errors.email}</div>}
           </div>
@@ -129,10 +148,14 @@ export default function Signup() {
             <label className="form-label">Password</label>
             <div className="input-wrap">
               <span className="input-icon-l"><Lock size={16}/></span>
-              <input type={showPw ? "text" : "password"} value={form.password}
-                onChange={setField("password")} placeholder="Min. 6 characters"
+              <input
+                type={showPw ? "text" : "password"}
+                value={form.password}
+                onChange={setField("password")}
+                placeholder="Min. 6 characters"
                 className={`form-control has-icon-l ${errors.password ? "error" : ""}`}
-                style={{ paddingRight:42 }}/>
+                style={{ paddingRight:42 }}
+              />
               <span className="input-icon-r" onClick={() => setShowPw(p => !p)}>
                 {showPw ? <EyeOff size={16}/> : <Eye size={16}/>}
               </span>
@@ -143,10 +166,15 @@ export default function Signup() {
 
           {/* Terms */}
           <label style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:errors.terms?8:24, cursor:"pointer" }}>
-            <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
-              style={{ marginTop:3, accentColor:"#FF385C", width:16, height:16, flexShrink:0 }}/>
-            <span style={{ fontSize:13, color:"#6B7280", lineHeight:1.6 }}>
-              I agree to the <a href="#" style={{ color:"#FF385C", fontWeight:600 }}>Terms of Service</a> and <a href="#" style={{ color:"#FF385C", fontWeight:600 }}>Privacy Policy</a>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={e => setAgreed(e.target.checked)}
+              style={{ marginTop:3, accentColor:"var(--primary)", width:16, height:16, flexShrink:0 }}
+            />
+            <span style={{ fontSize:13, color:"var(--text2)", lineHeight:1.6 }}>
+              I agree to the <a href="#" style={{ color:"var(--primary)", fontWeight:600 }}>Terms of Service</a> and{" "}
+              <a href="#" style={{ color:"var(--primary)", fontWeight:600 }}>Privacy Policy</a>
             </span>
           </label>
           {errors.terms && <div className="form-error" style={{ marginBottom:16 }}>⚠ {errors.terms}</div>}
@@ -157,9 +185,9 @@ export default function Signup() {
               : <>Create Account <ArrowRight size={18}/></>}
           </button>
 
-          <p style={{ textAlign:"center", fontSize:14, color:"#6B7280", marginTop:24 }}>
+          <p style={{ textAlign:"center", fontSize:14, color:"var(--text2)", marginTop:24 }}>
             Already have an account?{" "}
-            <Link to="/login" style={{ color:"#FF385C", fontWeight:700 }}>Sign in</Link>
+            <Link to="/login" style={{ color:"var(--primary)", fontWeight:700 }}>Sign in</Link>
           </p>
         </div>
       </div>

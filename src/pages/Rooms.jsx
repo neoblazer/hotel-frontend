@@ -117,7 +117,7 @@ export default function Rooms() {
   );
 
   return (
-    <div style={{ paddingTop:70, minHeight:"100vh", background:"#F9FAFB" }}>
+    <div style={{ paddingTop:70, minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       {/* Hero */}
       <div style={{ position:"relative", height:360, overflow:"hidden" }}>
         <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1400&q=80"
@@ -130,7 +130,7 @@ export default function Rooms() {
         <div className="container" style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%" }}>
           <div style={{ paddingBottom:28 }}>
             <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-              <span style={{ background:"#FF385C", color:"white", fontSize:12, fontWeight:700, padding:"4px 12px", borderRadius:99 }}>⭐ {hotel?.rating || 4.5}</span>
+              <span style={{ background:"var(--primary)", color:"white", fontSize:12, fontWeight:700, padding:"4px 12px", borderRadius:99 }}>⭐ {hotel?.rating || 4.5}</span>
             </div>
             <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,4vw,42px)", fontWeight:900, color:"white", marginBottom:8 }}>{hotel?.name || "Hotel"}</h1>
             <div style={{ display:"flex", alignItems:"center", gap:16, color:"rgba(255,255,255,0.85)", fontSize:14, flexWrap:"wrap" }}>
@@ -152,15 +152,15 @@ export default function Rooms() {
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <div style={{ maxWidth:720 }}>
-            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:700, marginBottom:16 }}>About {hotel?.name}</h2>
-            <p style={{ color:"#6B7280", lineHeight:1.9, fontSize:16 }}>
+            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:700, marginBottom:16, color:"var(--text)" }}>About {hotel?.name}</h2>
+            <p style={{ color:"var(--text2)", lineHeight:1.9, fontSize:16 }}>
               {hotel?.description || "Experience world-class hospitality and comfort at this premier property. Every detail is crafted to ensure an exceptional stay for every guest."}
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:16, marginTop:32 }}>
               {[["⏰ Check-In","From 2:00 PM"],["⏰ Check-Out","Until 12:00 PM"],["❌ Cancellation","Free (48h before)"],["💳 Payment","Card / UPI / QR"]].map(([k,v]) => (
-                <div key={k} style={{ background:"white", borderRadius:12, padding:16, border:"1px solid #E5E7EB" }}>
-                  <div style={{ fontSize:12, color:"#9CA3AF", fontWeight:600, marginBottom:4 }}>{k}</div>
-                  <div style={{ fontSize:14, fontWeight:700 }}>{v}</div>
+                <div key={k} style={{ background:"var(--surface)", borderRadius:12, padding:16, border:"1px solid var(--border)" }}>
+                  <div style={{ fontSize:12, color:"var(--text3)", fontWeight:600, marginBottom:4 }}>{k}</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:"var(--text)" }}>{v}</div>
                 </div>
               ))}
             </div>
@@ -171,9 +171,9 @@ export default function Rooms() {
         {activeTab === "amenities" && (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:14 }}>
             {["Free WiFi","Swimming Pool","Fitness Center","Restaurant","24h Room Service","Airport Shuttle","Business Center","Spa & Wellness","Bar & Lounge","Valet Parking","Concierge","Laundry"].map(a => (
-              <div key={a} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:"white", borderRadius:12, border:"1px solid #E5E7EB" }}>
+              <div key={a} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:"var(--surface)", borderRadius:12, border:"1px solid var(--border)" }}>
                 <span style={{ color:"#10B981", fontSize:16 }}>✓</span>
-                <span style={{ fontSize:14, fontWeight:500 }}>{a}</span>
+                <span style={{ fontSize:14, fontWeight:500, color:"var(--text)" }}>{a}</span>
               </div>
             ))}
           </div>
@@ -183,10 +183,10 @@ export default function Rooms() {
         {activeTab === "rooms" && (
           <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
             {rooms.length === 0 ? (
-              <div style={{ textAlign:"center", padding:"60px 24px", background:"white", borderRadius:16, border:"1px solid #E5E7EB" }}>
+              <div style={{ textAlign:"center", padding:"60px 24px", background:"var(--surface)", borderRadius:16, border:"1px solid var(--border)" }}>
                 <div style={{ fontSize:48, marginBottom:12 }}>🛏</div>
-                <h3 style={{ fontWeight:700, marginBottom:8 }}>No rooms found</h3>
-                <p style={{ color:"#6B7280" }}>Please check back later or contact the hotel directly.</p>
+                <h3 style={{ fontWeight:700, marginBottom:8, color:"var(--text)" }}>No rooms found</h3>
+                <p style={{ color:"var(--text2)" }}>Please check back later or contact the hotel directly.</p>
               </div>
             ) : rooms.map(room => {
               const amenities = parseAmenities(room.amenities);
@@ -194,7 +194,7 @@ export default function Rooms() {
               const isSelecting = bookingRoom?.id === room.id;
               return (
                 <div key={room.id}
-                  style={{ background:"white", border:"1px solid #E5E7EB", borderRadius:16, display:"flex", overflow:"hidden", transition:"box-shadow .2s" }}
+                  style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:16, display:"flex", overflow:"hidden", transition:"box-shadow .2s" }}
                   onMouseEnter={e => e.currentTarget.style.boxShadow="0 8px 32px rgba(0,0,0,0.09)"}
                   onMouseLeave={e => e.currentTarget.style.boxShadow="none"}>
 
@@ -210,21 +210,21 @@ export default function Rooms() {
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12, gap:16, flexWrap:"wrap" }}>
                       <div>
                         <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6, flexWrap:"wrap" }}>
-                          <span style={{ background:"#EFF6FF", color:"#2563EB", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:99 }}>{room.type}</span>
+                          <span style={{ background:"var(--surface2)", color:"var(--primary)", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:99 }}>{room.type}</span>
                           {room.totalRooms > 0 && room.totalRooms <= 2 && (
-                            <span style={{ background:"#FFFBEB", color:"#D97706", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:99 }}>Only {room.totalRooms} left!</span>
+                            <span style={{ background:"rgba(245,158,11,0.12)", color:"#D97706", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:99 }}>Only {room.totalRooms} left!</span>
                           )}
                         </div>
-                        <h3 style={{ fontSize:20, fontWeight:700, marginBottom:6 }}>{room.type} Room</h3>
-                        <div style={{ display:"flex", gap:16, color:"#6B7280", fontSize:13, flexWrap:"wrap" }}>
+                        <h3 style={{ fontSize:20, fontWeight:700, marginBottom:6, color:"var(--text)" }}>{room.type} Room</h3>
+                        <div style={{ display:"flex", gap:16, color:"var(--text2)", fontSize:13, flexWrap:"wrap" }}>
                           <span style={{ display:"flex", alignItems:"center", gap:4 }}><Users size={13}/> Up to {room.capacity || 2} guests</span>
                           {room.rating && <span style={{ display:"flex", alignItems:"center", gap:4 }}><Star size={12} color="#FFB400" fill="#FFB400"/> {room.rating}</span>}
                           <span>🛏 {room.totalRooms} room{room.totalRooms !== 1?"s":""} available</span>
                         </div>
                       </div>
                       <div style={{ textAlign:"right", flexShrink:0 }}>
-                        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:700, lineHeight:1 }}>₹{price.toLocaleString()}</div>
-                        <div style={{ fontSize:13, color:"#9CA3AF" }}>per night</div>
+                        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:700, lineHeight:1, color:"var(--text)" }}>₹{price.toLocaleString()}</div>
+                        <div style={{ fontSize:13, color:"var(--text3)" }}>per night</div>
                         {nights > 0 && (
                           <div style={{ fontSize:13, color:"#10B981", fontWeight:700, marginTop:4 }}>
                             {nights} night{nights>1?"s":""} = ₹{(price*nights).toLocaleString()}
@@ -237,7 +237,7 @@ export default function Rooms() {
                     {amenities.length > 0 && (
                       <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
                         {amenities.map(a => (
-                          <span key={a} style={{ display:"flex", alignItems:"center", gap:5, background:"#F9FAFB", border:"1px solid #E5E7EB", borderRadius:99, padding:"5px 12px", fontSize:12, color:"#374151", fontWeight:500 }}>
+                          <span key={a} style={{ display:"flex", alignItems:"center", gap:5, background:"var(--surface2)", border:"1px solid var(--border)", borderRadius:99, padding:"5px 12px", fontSize:12, color:"var(--text2)", fontWeight:500 }}>
                             {AMENITY_ICONS[a] || "✓"} {a}
                           </span>
                         ))}
@@ -246,7 +246,7 @@ export default function Rooms() {
 
                     {/* Booking form (inline) */}
                     {isSelecting ? (
-                      <div style={{ background:"#F9FAFB", borderRadius:12, padding:18, border:"1px solid #E5E7EB", marginTop:"auto" }}>
+                      <div style={{ background:"var(--surface2)", borderRadius:12, padding:18, border:"1px solid var(--border)", marginTop:"auto" }}>
                         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:14 }}>
                           {[
                             ["Check-In", checkIn, v => setCheckIn(v), "date"],
@@ -254,36 +254,38 @@ export default function Rooms() {
                             ["Guests", guests, v => setGuests(+v), "number"],
                           ].map(([lbl, val, fn, type]) => (
                             <div key={lbl}>
-                              <label style={{ fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:6, color:"#374151" }}>{lbl}</label>
+                              <label style={{ fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:6, color:"var(--text2)" }}>{lbl}</label>
                               <input type={type} value={val} min={type==="date"?today:1} max={type==="number"?room.capacity||6:undefined}
                                 onChange={e => fn(e.target.value)}
-                                style={{ width:"100%", padding:"10px 12px", border:"1.5px solid #E5E7EB", borderRadius:8, fontSize:14, outline:"none", background:"white" }}
-                                onFocus={e => e.target.style.borderColor="#FF385C"} onBlur={e => e.target.style.borderColor="#E5E7EB"}/>
+                                style={{ width:"100%", padding:"10px 12px", border:"1.5px solid var(--border)", borderRadius:8, fontSize:14, outline:"none", background:"var(--surface)", color:"var(--text)" }}
+                                onFocus={e => e.target.style.borderColor="var(--primary)"} onBlur={e => e.target.style.borderColor="var(--border)"}/>
                             </div>
                           ))}
                         </div>
                         {nights > 0 && (
-                          <div style={{ background:"#ECFDF5", borderRadius:8, padding:"10px 14px", marginBottom:12, fontSize:13, color:"#059669", fontWeight:600, display:"flex", alignItems:"center", gap:8 }}>
+                          <div style={{ background:"rgba(16,185,129,0.12)", borderRadius:8, padding:"10px 14px", marginBottom:12, fontSize:13, color:"#059669", fontWeight:600, display:"flex", alignItems:"center", gap:8 }}>
                             📅 {nights} night{nights>1?"s":""} · Total: ₹{(price*nights).toLocaleString()} · Tax: ₹{Math.round(price*nights*0.12).toLocaleString()}
                           </div>
                         )}
                         <div style={{ display:"flex", gap:10 }}>
                           <button onClick={() => handleBook(room)} disabled={bookingLoading}
-                            style={{ flex:1, padding:"13px", background: bookingLoading?"#9CA3AF":"#FF385C", color:"white", border:"none", borderRadius:10, fontWeight:700, fontSize:15, cursor: bookingLoading?"not-allowed":"pointer", transition:"background .2s", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                            style={{ flex:1, padding:"13px", background: bookingLoading?"#9CA3AF":"var(--primary)", color:"white", border:"none", borderRadius:10, fontWeight:700, fontSize:15, cursor: bookingLoading?"not-allowed":"pointer", transition:"background .2s", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}
+                            onMouseEnter={e => { if (!bookingLoading) e.currentTarget.style.background="var(--primary-dark)"; }}
+                            onMouseLeave={e => { if (!bookingLoading) e.currentTarget.style.background="var(--primary)"; }}>
                             {bookingLoading
                               ? <><span style={{ width:16,height:16,border:"2px solid rgba(255,255,255,.4)",borderTop:"2px solid white",borderRadius:"50%",animation:"spin .7s linear infinite",display:"inline-block" }}/> Processing...</>
                               : "✓ Confirm & Pay →"}
                           </button>
                           <button onClick={() => setBookingRoom(null)}
-                            style={{ padding:"13px 20px", border:"1.5px solid #E5E7EB", borderRadius:10, background:"white", fontWeight:600, cursor:"pointer", fontSize:14 }}>Cancel</button>
+                            style={{ padding:"13px 20px", border:"1.5px solid var(--border)", borderRadius:10, background:"var(--surface)", color:"var(--text)", fontWeight:600, cursor:"pointer", fontSize:14 }}>Cancel</button>
                         </div>
                       </div>
                     ) : (
                       <div style={{ marginTop:"auto", paddingTop:16 }}>
                         <button onClick={() => setBookingRoom(room)}
-                          style={{ padding:"12px 32px", borderRadius:10, background:"#FF385C", color:"white", border:"none", fontWeight:700, fontSize:15, cursor:"pointer", transition:"all .2s" }}
-                          onMouseEnter={e => { e.currentTarget.style.background="#D93050"; e.currentTarget.style.transform="translateY(-1px)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background="#FF385C"; e.currentTarget.style.transform="none"; }}>
+                          style={{ padding:"12px 32px", borderRadius:10, background:"var(--primary)", color:"white", border:"none", fontWeight:700, fontSize:15, cursor:"pointer", transition:"all .2s" }}
+                          onMouseEnter={e => { e.currentTarget.style.background="var(--primary-dark)"; e.currentTarget.style.transform="translateY(-1px)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="var(--primary)"; e.currentTarget.style.transform="none"; }}>
                           Select Dates & Book
                         </button>
                         <span style={{ marginLeft:14, fontSize:13, color:"#10B981", fontWeight:600 }}>✓ Free cancellation</span>

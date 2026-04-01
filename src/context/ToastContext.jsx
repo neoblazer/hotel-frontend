@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
 
 const ToastContext = createContext(null);
@@ -12,12 +12,13 @@ export const ToastProvider = ({ children }) => {
     setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3500);
   }, []);
 
-  const toast = {
+  // Memoized so consumers don't re-render on every toast state change
+  const toast = useMemo(() => ({
     success: (m) => show(m, "success"),
     error:   (m) => show(m, "error"),
     info:    (m) => show(m, "info"),
     warning: (m) => show(m, "warning"),
-  };
+  }), [show]);
 
   const icons = { success: <CheckCircle size={18}/>, error: <AlertCircle size={18}/>, info: <Info size={18}/>, warning: <AlertTriangle size={18}/> };
 
