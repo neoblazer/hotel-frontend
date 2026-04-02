@@ -1,17 +1,48 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, ArrowRight, MapPin } from "lucide-react";
+import { getWishlist, removeFromWishlist } from "../services/api";
+import { useToast } from "../context/ToastContext";
+
+const fallbackImage =
+  "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80";
 
 export default function Wishlist() {
   const navigate = useNavigate();
-  const [favorites, setFavorites] = useState(() =>
-    JSON.parse(localStorage.getItem("favorites") || "[]"),
-  );
+  const toast = useToast();
 
-  const remove = (id) => {
-    const updated = favorites.filter((f) => f.id !== id);
-    setFavorites(updated);
-    localStorage.setItem("favorites", JSON.stringify(updated));
+  const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState(null);
+
+  useEffect(() => {
+    loadWishlist();
+  }, []);
+
+  const loadWishlist = async () => {
+    setLoading(true);
+    try {
+      const data = await getWishlist();
+      setFavorites(Array.isArray(data) ? data : []);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to load wishlist");
+      setFavorites([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const remove = async (hotelId) => {
+    setRemovingId(hotelId);
+    try {
+      await removeFromWishlist(hotelId);
+      setFavorites((prev) => prev.filter((f) => f.hotelId !== hotelId));
+      toast.success("Removed from wishlist");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to remove from wishlist");
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   return (
@@ -30,6 +61,7 @@ export default function Wishlist() {
             alignItems: "center",
             gap: 12,
             marginBottom: 32,
+            flexWrap: "wrap",
           }}
         >
           <div
@@ -49,7 +81,7 @@ export default function Wishlist() {
           <div>
             <h1
               style={{
-                fontFamily: "'Playfair Display',serif",
+                fontFamily: "var(--font-serif)",
                 fontSize: 30,
                 fontWeight: 700,
                 color: "var(--text)",
@@ -63,7 +95,34 @@ export default function Wishlist() {
           </div>
         </div>
 
-        {favorites.length === 0 ? (
+        {loading ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))",
+              gap: 24,
+            }}
+          >
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  background: "var(--surface)",
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  overflow: "hidden",
+                }}
+              >
+                <div className="skeleton" style={{ height: 200 }} />
+                <div style={{ padding: 18 }}>
+                  <div className="skeleton" style={{ height: 12, width: "35%", marginBottom: 8 }} />
+                  <div className="skeleton" style={{ height: 18, width: "60%", marginBottom: 14 }} />
+                  <div className="skeleton" style={{ height: 36, width: "100%" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : favorites.length === 0 ? (
           <div
             style={{
               textAlign: "center",
@@ -109,7 +168,7 @@ export default function Wishlist() {
           >
             {favorites.map((hotel) => (
               <div
-                key={hotel.id}
+                key={hotel.hotelId}
                 style={{
                   background: "var(--surface)",
                   borderRadius: 16,
@@ -120,8 +179,7 @@ export default function Wishlist() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-5px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 16px 48px rgba(0,0,0,0.12)";
+                  e.currentTarget.style.boxShadow = "0 16px 48px rgba(0,0,0,0.12)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "none";
@@ -136,10 +194,7 @@ export default function Wishlist() {
                   }}
                 >
                   <img
-                    src={
-                      hotel.imageUrl ||
-                      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80"
-                    }
+                    src={hotel.imageUrl || fallbackImage}
                     alt={hotel.name}
                     style={{
                       width: "100%",
@@ -156,7 +211,8 @@ export default function Wishlist() {
                     }}
                   />
                   <button
-                    onClick={() => remove(hotel.id)}
+                    onClick={() => remove(hotel.hotelId)}
+                    disabled={removingId === hotel.hotelId}
                     style={{
                       position: "absolute",
                       top: 10,
@@ -171,11 +227,8 @@ export default function Wishlist() {
                       justifyContent: "center",
                       cursor: "pointer",
                       transition: "all .2s",
+                      opacity: removingId === hotel.hotelId ? 0.6 : 1,
                     }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.opacity = "0.9")
-                    }
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
                   >
                     <Heart
                       size={16}
@@ -197,7 +250,7 @@ export default function Wishlist() {
                     }}
                   >
                     <MapPin size={11} />
-                    {hotel.city}
+                    {hotel.city}, {hotel.state}
                   </div>
 
                   <h3
@@ -211,6 +264,17 @@ export default function Wishlist() {
                     {hotel.name}
                   </h3>
 
+                  <p
+                    style={{
+                      color: "var(--text2)",
+                      fontSize: 13,
+                      minHeight: 40,
+                      marginBottom: 14,
+                    }}
+                  >
+                    {hotel.description || "Comfortable stay with modern amenities."}
+                  </p>
+
                   <div
                     style={{
                       display: "flex",
@@ -218,39 +282,33 @@ export default function Wishlist() {
                       justifyContent: "space-between",
                       paddingTop: 14,
                       borderTop: "1px solid var(--border)",
+                      gap: 12,
+                      flexWrap: "wrap",
                     }}
                   >
                     <div>
                       <span
                         style={{
-                          fontFamily: "'Playfair Display',serif",
+                          fontFamily: "var(--font-serif)",
                           fontSize: 20,
                           fontWeight: 700,
                           color: "var(--text)",
                         }}
                       >
-                        ₹{(hotel.price || 2000).toLocaleString()}
+                        {hotel.minPrice != null
+                          ? `₹${hotel.minPrice.toLocaleString()}`
+                          : "Price unavailable"}
                       </span>
-                      <span style={{ fontSize: 12, color: "var(--text2)" }}>
-                        /night
-                      </span>
+                      {hotel.minPrice != null && (
+                        <span style={{ fontSize: 12, color: "var(--text2)" }}>
+                          /night
+                        </span>
+                      )}
                     </div>
 
                     <button
-                      onClick={() => navigate(`/rooms/${hotel.id}`)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "8px 16px",
-                        background: "var(--primary)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 8,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
+                      onClick={() => navigate(`/rooms/${hotel.hotelId}`)}
+                      className="btn btn-primary btn-sm"
                     >
                       Book <ArrowRight size={13} />
                     </button>

@@ -4,8 +4,15 @@ import { MapPin, Search, SlidersHorizontal, Map, Grid, Heart } from "lucide-reac
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { getHotels, searchHotels } from "../services/api";
+import {
+  getHotels,
+  searchHotels,
+  getWishlist,
+  addToWishlist,
+  removeFromWishlist,
+} from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -44,29 +51,39 @@ const StarRow = ({ rating }) => (
   </span>
 );
 
+
 export default function Hotels() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useToast();
+  const { isLoggedIn } = useAuth();
 
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [wishlistIds, setWishlistIds] = useState([]);
+  const [wishlistBusyId, setWishlistBusyId] = useState(null);
+
   const [city, setCity] = useState(searchParams.get("city") || "");
   const [maxPrice, setMaxPrice] = useState(25000);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState("rating");
-  const [wishlist, setWishlist] = useState(() =>
-    JSON.parse(localStorage.getItem("favorites") || "[]")
-  );
   const [userLocation, setUserLocation] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
   const [filtersOpen, setFiltersOpen] = useState(!isMobile());
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-
+  const deal = searchParams.get("deal") || "";
   useEffect(() => {
     loadHotels();
   }, [page]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadWishlist();
+    } else {
+      setWishlistIds([]);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -76,6 +93,33 @@ export default function Hotels() {
       );
     }
   }, []);
+  
+  useEffect(() => {
+    const qCity = searchParams.get("city") || "";
+    const qDeal = searchParams.get("deal") || "";
+
+    if (qCity) setCity(qCity);
+
+    if (qDeal === "top-rated") {
+      setMinRating(4.5);
+      setSortBy("rating");
+    } else if (qDeal === "budget") {
+      setSortBy("priceLow");
+      setMaxPrice(5000);
+    } else if (qDeal === "luxury") {
+      setSortBy("priceHigh");
+      setMinRating(4);
+    }
+  }, [searchParams]);
+
+  const loadWishlist = async () => {
+    try {
+      const data = await getWishlist();
+      setWishlistIds(Array.isArray(data) ? data.map((item) => item.hotelId) : []);
+    } catch {
+      setWishlistIds([]);
+    }
+  };
 
   const loadHotels = async () => {
     setLoading(true);
@@ -124,25 +168,40 @@ export default function Hotels() {
     return +(R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))).toFixed(1);
   };
 
-  const toggleWish = (hotel, e) => {
+  const toggleWish = async (hotel, e) => {
     e?.stopPropagation();
-    const exists = wishlist.some((f) => f.id === hotel.id);
-    const updated = exists
-      ? wishlist.filter((f) => f.id !== hotel.id)
-      : [...wishlist, hotel];
 
-    setWishlist(updated);
-    localStorage.setItem("favorites", JSON.stringify(updated));
-    toast[exists ? "info" : "success"](
-      exists ? "Removed from wishlist" : "Added to wishlist ❤️"
-    );
+    if (!isLoggedIn) {
+      toast.info("Please login to use wishlist");
+      navigate("/login");
+      return;
+    }
+
+    const exists = wishlistIds.includes(hotel.id);
+    setWishlistBusyId(hotel.id);
+
+    try {
+      if (exists) {
+        await removeFromWishlist(hotel.id);
+        setWishlistIds((prev) => prev.filter((id) => id !== hotel.id));
+        toast.info("Removed from wishlist");
+      } else {
+        await addToWishlist(hotel.id);
+        setWishlistIds((prev) => [...prev, hotel.id]);
+        toast.success("Added to wishlist ❤️");
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Wishlist update failed");
+    } finally {
+      setWishlistBusyId(null);
+    }
   };
 
   const filtered = useMemo(() => {
     let list = hotels
       .filter((h) => !city || h.city?.toLowerCase().includes(city.toLowerCase()))
       .filter((h) => (h.rating || 0) >= minRating)
-      .filter((h) => (h.minPrice || 0) <= maxPrice)
+      .filter((h) => h.minPrice == null || h.minPrice <= maxPrice)
       .map((h) => {
         const coords = CITY_COORDS[h.city] || CITY_COORDS[h.state];
         const distance =
@@ -161,9 +220,13 @@ export default function Hotels() {
     if (sortBy === "rating") {
       list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === "priceLow") {
-      list.sort((a, b) => (a.minPrice || 0) - (b.minPrice || 0));
+      list.sort(
+        (a, b) =>
+          (a.minPrice ?? Number.MAX_SAFE_INTEGER) -
+          (b.minPrice ?? Number.MAX_SAFE_INTEGER)
+      );
     } else if (sortBy === "priceHigh") {
-      list.sort((a, b) => (b.minPrice || 0) - (a.minPrice || 0));
+      list.sort((a, b) => (b.minPrice ?? -1) - (a.minPrice ?? -1));
     } else if (sortBy === "distance") {
       list.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
     }
@@ -193,7 +256,7 @@ export default function Hotels() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <button className="btn btn-outline" onClick={() => setFiltersOpen((v) => !v)}>
               <SlidersHorizontal size={16} /> Filters
             </button>
@@ -304,7 +367,9 @@ export default function Hotels() {
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                           <span style={{ color: "var(--primary)", fontWeight: 700 }}>
-                            {h.minPrice ? `₹${h.minPrice.toLocaleString()}/night` : "Price unavailable"}
+                            {h.minPrice != null
+                              ? `₹${h.minPrice.toLocaleString()}/night`
+                              : "Price unavailable"}
                           </span>
                           <span style={{ color: "#FFB400" }}>★ {h.rating || "—"}</span>
                         </div>
@@ -355,7 +420,7 @@ export default function Hotels() {
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20 }}>
               {filtered.map((hotel) => {
-                const isFav = wishlist.some((f) => f.id === hotel.id);
+                const isFav = wishlistIds.includes(hotel.id);
 
                 return (
                   <div
@@ -377,6 +442,7 @@ export default function Hotels() {
                       />
                       <button
                         onClick={(e) => toggleWish(hotel, e)}
+                        disabled={wishlistBusyId === hotel.id}
                         style={{
                           position: "absolute",
                           top: 12,
@@ -390,6 +456,7 @@ export default function Hotels() {
                           display: "grid",
                           placeItems: "center",
                           cursor: "pointer",
+                          opacity: wishlistBusyId === hotel.id ? 0.7 : 1,
                         }}
                       >
                         <Heart size={18} fill={isFav ? "#FF4D6D" : "none"} />
@@ -417,7 +484,9 @@ export default function Hotels() {
                         <div>
                           <div style={{ fontSize: 13, color: "var(--text3)" }}>Starting from</div>
                           <div style={{ fontSize: 20, fontWeight: 800, color: "var(--primary)" }}>
-                            {hotel.minPrice ? `₹${hotel.minPrice.toLocaleString()}` : "—"}
+                            {hotel.minPrice != null
+                              ? `₹${hotel.minPrice.toLocaleString()}`
+                              : "Price unavailable"}
                           </div>
                         </div>
 

@@ -107,4 +107,28 @@ export const addRating = (data) =>
 export const getRatings = (hotelId) =>
   API.get(`/ratings/${hotelId}`).then((r) => r.data.data);
 
+export const getWishlist = () =>
+  API.get("/wishlist").then((r) => r.data.data);
+
+export const addToWishlist = (hotelId) =>
+  API.post("/wishlist", { hotelId }).then((r) => r.data.data);
+
+export const removeFromWishlist = (hotelId) =>
+  API.delete(`/wishlist/${hotelId}`).then((r) => r.data.data);
+
+export const checkWishlist = (hotelId) =>
+  API.get(`/wishlist/check/${hotelId}`).then((r) => r.data.data);
+
+export const googleLogin = (credential) =>
+  API.post("/auth/google", { credential }).then((r) => r.data.data);
+
+export const requestPhoneOtp = (phone) =>
+  API.post("/auth/phone/request-otp", { phone }).then((r) => r.data.data);
+
+export const verifyPhoneOtp = (phone, otp, name = "") =>
+  API.post("/auth/phone/verify-otp", { phone, otp, name }).then((r) => r.data.data);
+
+export const firebasePhoneLogin = (phone, name = "") =>
+  API.post("/auth/phone/firebase", { phone, name }).then((res) => res.data.data);
+
 export default API;

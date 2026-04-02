@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
-import API from "../services/api";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Smartphone } from "lucide-react";
+import API, { googleLogin, firebasePhoneLogin } from "../services/api";
+import { auth } from "../firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+
+let confirmationResultRef = null;
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,6 +19,26 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const [phoneMode, setPhoneMode] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneLoading, setPhoneLoading] = useState(false);
+
+  useEffect(() => {
+    if (window.google) return;
+
+    const existing = document.getElementById("google-gsi-script");
+    if (existing) return;
+
+    const script = document.createElement("script");
+    script.id = "google-gsi-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+  }, []);
 
   const validate = () => {
     const e = {};
@@ -58,23 +82,105 @@ export default function Login() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    if (!window.google?.accounts?.id) {
+      toast.error("Google Sign-In is not ready yet");
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        try {
+          setLoading(true);
+          const payload = await googleLogin(response.credential);
+          login(payload);
+          toast.success("Signed in with Google");
+          navigate(payload.role === "ADMIN" ? "/admin" : "/");
+        } catch (err) {
+          toast.error(err?.response?.data?.message || "Google sign-in failed");
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+
+    window.google.accounts.id.prompt();
+  };
+
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+      });
+    }
+    return window.recaptchaVerifier;
+  };
+
+  const handleSendOtp = async () => {
+    if (!phone.trim()) {
+      toast.error("Enter your phone number");
+      return;
+    }
+
+    try {
+      setPhoneLoading(true);
+      const appVerifier = setupRecaptcha();
+      confirmationResultRef = await signInWithPhoneNumber(auth, phone.trim(), appVerifier);
+      setOtpSent(true);
+      toast.success("OTP sent");
+    } catch (err) {
+      toast.error(err?.message || "Failed to send OTP");
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) {
+      toast.error("Enter OTP");
+      return;
+    }
+
+    if (!confirmationResultRef) {
+      toast.error("OTP session expired. Please request OTP again.");
+      return;
+    }
+
+    try {
+      setPhoneLoading(true);
+
+      await confirmationResultRef.confirm(otp.trim());
+
+      const payload = await firebasePhoneLogin(phone.trim());
+      login(payload);
+
+      toast.success("Signed in with phone");
+      navigate(payload.role === "ADMIN" ? "/admin" : "/");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.message || "OTP verification failed");
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
   return (
-	<div
-	  style={{
-	    minHeight: "100vh",
-	    display: "grid",
-	    gridTemplateColumns: window.innerWidth <= 900 ? "1fr" : "1fr 1fr",
-	  }}
-	>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        gridTemplateColumns: window.innerWidth <= 900 ? "1fr" : "1fr 1fr",
+      }}
+    >
       {/* Left visual */}
       <div
-	  style={{
-	    position: "relative",
-	    overflow: "hidden",
-	    display: window.innerWidth <= 900 ? "none" : "flex",
-	    alignItems: "center",
-	    justifyContent: "center",
-	  }}
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          display: window.innerWidth <= 900 ? "none" : "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
         <div
           style={{
@@ -98,7 +204,7 @@ export default function Login() {
           <Link
             to="/"
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 28,
               fontWeight: 900,
               color: "white",
@@ -112,7 +218,7 @@ export default function Login() {
 
           <h2
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 42,
               fontWeight: 900,
               lineHeight: 1.15,
@@ -161,7 +267,7 @@ export default function Login() {
         <div style={{ width: "100%", maxWidth: 420 }}>
           <h1
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 34,
               fontWeight: 700,
               marginBottom: 8,
@@ -175,138 +281,183 @@ export default function Login() {
             Sign in to access your bookings and favourites
           </p>
 
-          {/* Email */}
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <div className="input-wrap">
-              <span className="input-icon-l">
-                <Mail size={16} />
-              </span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder="you@example.com"
-                className={`form-control has-icon-l ${errors.email ? "error" : ""}`}
-              />
-            </div>
-            {errors.email && <div className="form-error">⚠ {errors.email}</div>}
-          </div>
+          {!phoneMode ? (
+            <>
+              {/* Email */}
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div className="input-wrap">
+                  <span className="input-icon-l">
+                    <Mail size={16} />
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                    placeholder="you@example.com"
+                    className={`form-control has-icon-l ${errors.email ? "error" : ""}`}
+                  />
+                </div>
+                {errors.email && <div className="form-error">⚠ {errors.email}</div>}
+              </div>
 
-          {/* Password */}
-          <div className="form-group">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 7,
-              }}
-            >
-              <label className="form-label" style={{ margin: 0 }}>
-                Password
-              </label>
-              <span style={{ fontSize: 13, color: "var(--text3)", fontWeight: 600 }}>
-                Secure login
-              </span>
-            </div>
-
-            <div className="input-wrap">
-              <span className="input-icon-l">
-                <Lock size={16} />
-              </span>
-              <input
-                type={showPw ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder="••••••••"
-                className={`form-control has-icon-l ${errors.password ? "error" : ""}`}
-                style={{ paddingRight: 42 }}
-              />
-              <span className="input-icon-r" onClick={() => setShowPw((p) => !p)}>
-                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-              </span>
-            </div>
-            {errors.password && <div className="form-error">⚠ {errors.password}</div>}
-          </div>
-
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="btn btn-primary btn-block btn-lg"
-            style={{ marginTop: 8 }}
-          >
-            {loading ? (
-              <>
-                <span
+              {/* Password */}
+              <div className="form-group">
+                <div
                   style={{
-                    width: 18,
-                    height: 18,
-                    border: "2px solid rgba(255,255,255,.4)",
-                    borderTop: "2px solid white",
-                    borderRadius: "50%",
-                    animation: "spin .7s linear infinite",
-                    display: "inline-block",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 7,
                   }}
-                />
-                {" "}Signing in...
-              </>
-            ) : (
-              <>
-                Sign In <ArrowRight size={18} />
-              </>
-            )}
-          </button>
+                >
+                  <label className="form-label" style={{ margin: 0 }}>
+                    Password
+                  </label>
+                  <span style={{ fontSize: 13, color: "var(--text3)", fontWeight: 600 }}>
+                    Secure login
+                  </span>
+                </div>
 
-          <div
-            style={{
-              background: "rgba(16,185,129,0.12)",
-              border: "1px solid rgba(16,185,129,0.3)",
-              borderRadius: 10,
-              padding: "12px 16px",
-              marginTop: 16,
-              fontSize: 13,
-            }}
-          >
-            <strong style={{ color: "#059669" }}>Admin test account:</strong>{" "}
-            <span style={{ color: "var(--text2)" }}>admin@smartstayvizag.com / admin123</span>
-          </div>
+                <div className="input-wrap">
+                  <span className="input-icon-l">
+                    <Lock size={16} />
+                  </span>
+                  <input
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                    placeholder="••••••••"
+                    className={`form-control has-icon-l ${errors.password ? "error" : ""}`}
+                    style={{ paddingRight: 42 }}
+                  />
+                  <span className="input-icon-r" onClick={() => setShowPw((p) => !p)}>
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </span>
+                </div>
+                {errors.password && <div className="form-error">⚠ {errors.password}</div>}
+              </div>
+
+              <button
+                onClick={handleLogin}
+                disabled={loading}
+                className="btn btn-primary btn-block btn-lg"
+                style={{ marginTop: 8 }}
+              >
+                {loading ? (
+                  <>
+                    <span
+                      style={{
+                        width: 18,
+                        height: 18,
+                        border: "2px solid rgba(255,255,255,.4)",
+                        borderTop: "2px solid white",
+                        borderRadius: "50%",
+                        animation: "spin .7s linear infinite",
+                        display: "inline-block",
+                      }}
+                    />
+                    {" "}Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <div className="input-wrap">
+                  <span className="input-icon-l">
+                    <Smartphone size={16} />
+                  </span>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91XXXXXXXXXX"
+                    className="form-control has-icon-l"
+                  />
+                </div>
+              </div>
+
+              {otpSent && (
+                <div className="form-group">
+                  <label className="form-label">OTP</label>
+                  <input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="Enter 6-digit OTP"
+                    className="form-control"
+                    maxLength={6}
+                  />
+                </div>
+              )}
+
+              {!otpSent ? (
+                <button
+                  onClick={handleSendOtp}
+                  disabled={phoneLoading}
+                  className="btn btn-primary btn-block btn-lg"
+                >
+                  {phoneLoading ? "Sending OTP..." : "Send OTP"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleVerifyOtp}
+                  disabled={phoneLoading}
+                  className="btn btn-primary btn-block btn-lg"
+                >
+                  {phoneLoading ? "Verifying..." : "Verify OTP"}
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="btn btn-outline btn-block"
+                style={{ marginTop: 12 }}
+                onClick={() => {
+                  setPhoneMode(false);
+                  setOtp("");
+                  setOtpSent(false);
+                  setPhone("");
+                }}
+              >
+                Back to Email Login
+              </button>
+
+              <div id="recaptcha-container"></div>
+            </>
+          )}
 
           <div className="divider-text" style={{ margin: "20px 0" }}>
             or continue with
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {[
-              ["🇬", "Google"],
-              ["📱", "Phone"],
-            ].map(([icon, label]) => (
-              <button
-                key={label}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  padding: "12px",
-                  border: "1.5px solid var(--border)",
-                  borderRadius: 10,
-                  background: "var(--surface)",
-                  color: "var(--text)",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all .2s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface2)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface)")}
-                type="button"
-              >
-                <span style={{ fontSize: 18 }}>{icon}</span> {label}
-              </button>
-            ))}
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+            >
+              <span style={{ fontSize: 18 }}>🇬</span> Google
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setPhoneMode(true)}
+              disabled={phoneLoading}
+            >
+              <span style={{ fontSize: 18 }}>📱</span> Phone
+            </button>
           </div>
 
           <p style={{ textAlign: "center", fontSize: 14, color: "var(--text2)", marginTop: 28 }}>
@@ -320,11 +471,8 @@ export default function Login() {
 
       <style>{`
         @media (max-width: 768px) {
-          div[style*="grid-template-columns: 1fr 1fr"] {
+          .auth-page-grid {
             grid-template-columns: 1fr !important;
-          }
-          div[style*="backgroundImage"] {
-            display: none !important;
           }
         }
       `}</style>
