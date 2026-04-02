@@ -50,11 +50,11 @@ export const searchHotels = (params) =>
 export const getTopHotels = (params) =>
   API.get("/hotels/top", { params }).then((r) => r.data.data);
 
-export const getRoomsByHotel = (hotelId) =>
-  API.get(`/rooms/hotel/${hotelId}`).then((r) => r.data.data);
-
 export const getAvailableRooms = (checkIn, checkOut) =>
   API.get("/rooms/available", { params: { checkIn, checkOut } }).then((r) => r.data.data);
+
+export const getRoomsByHotel = (hotelId) =>
+  API.get(`/rooms/hotel/${hotelId}`).then((r) => r.data.data);
 
 export const createBooking = (data) =>
   API.post("/bookings", data).then((r) => r.data.data);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { MapPin, Search, SlidersHorizontal, Map, Grid, Heart } from "lucide-react";
+import { MapPin, Search, SlidersHorizontal, Map, Grid, Heart, Calendar, Users } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -51,38 +51,39 @@ const StarRow = ({ rating }) => (
   </span>
 );
 
-
 export default function Hotels() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
   const { isLoggedIn } = useAuth();
 
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [wishlistIds, setWishlistIds] = useState([]);
   const [wishlistBusyId, setWishlistBusyId] = useState(null);
 
   const [city, setCity] = useState(searchParams.get("city") || "");
-  const [maxPrice, setMaxPrice] = useState(25000);
-  const [minRating, setMinRating] = useState(0);
-  const [sortBy, setSortBy] = useState("rating");
+  const [checkIn, setCheckIn] = useState(searchParams.get("checkIn") || "");
+  const [checkOut, setCheckOut] = useState(searchParams.get("checkOut") || "");
+  const [guests, setGuests] = useState(Number(searchParams.get("guests") || 1));
+  const [maxPrice, setMaxPrice] = useState(Number(searchParams.get("max") || 25000));
+  const [minPrice, setMinPrice] = useState(Number(searchParams.get("min") || 0));
+  const [minRating, setMinRating] = useState(Number(searchParams.get("rating") || 0));
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "rating");
   const [userLocation, setUserLocation] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
   const [filtersOpen, setFiltersOpen] = useState(!isMobile());
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(Number(searchParams.get("page") || 0));
   const [totalPages, setTotalPages] = useState(1);
-  const deal = searchParams.get("deal") || "";
+
   useEffect(() => {
     loadHotels();
   }, [page]);
 
   useEffect(() => {
-    if (isLoggedIn) {
-      loadWishlist();
-    } else {
-      setWishlistIds([]);
-    }
+    if (isLoggedIn) loadWishlist();
+    else setWishlistIds([]);
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -93,29 +94,11 @@ export default function Hotels() {
       );
     }
   }, []);
-  
-  useEffect(() => {
-    const qCity = searchParams.get("city") || "";
-    const qDeal = searchParams.get("deal") || "";
-
-    if (qCity) setCity(qCity);
-
-    if (qDeal === "top-rated") {
-      setMinRating(4.5);
-      setSortBy("rating");
-    } else if (qDeal === "budget") {
-      setSortBy("priceLow");
-      setMaxPrice(5000);
-    } else if (qDeal === "luxury") {
-      setSortBy("priceHigh");
-      setMinRating(4);
-    }
-  }, [searchParams]);
 
   const loadWishlist = async () => {
     try {
       const data = await getWishlist();
-      setWishlistIds(Array.isArray(data) ? data.map((item) => item.hotelId) : []);
+      setWishlistIds(Array.isArray(data) ? data.map((x) => x.hotelId) : []);
     } catch {
       setWishlistIds([]);
     }
@@ -124,7 +107,24 @@ export default function Hotels() {
   const loadHotels = async () => {
     setLoading(true);
     try {
-      const data = await getHotels({ page, size: 12 });
+      const hasAdvanced =
+        city.trim() || checkIn || checkOut || guests > 1 || minPrice > 0 || maxPrice < 25000 || minRating > 0;
+
+      const params = {
+        page,
+        size: 12,
+      };
+
+      if (city.trim()) params.city = city.trim();
+      if (minPrice > 0) params.min = minPrice;
+      if (maxPrice < 25000) params.max = maxPrice;
+      if (minRating > 0) params.rating = minRating;
+      if (guests > 0) params.capacity = guests;
+      if (checkIn) params.checkIn = checkIn;
+      if (checkOut) params.checkOut = checkOut;
+
+      const data = hasAdvanced ? await searchHotels(params) : await getHotels(params);
+
       setHotels(Array.isArray(data?.content) ? data.content : []);
       setTotalPages(data?.totalPages || 1);
     } catch (err) {
@@ -137,11 +137,33 @@ export default function Hotels() {
   };
 
   const handleSearch = async () => {
-    setLoading(true);
+    const next = new URLSearchParams();
+    if (city.trim()) next.set("city", city.trim());
+    if (checkIn) next.set("checkIn", checkIn);
+    if (checkOut) next.set("checkOut", checkOut);
+    if (guests > 0) next.set("guests", String(guests));
+    if (minPrice > 0) next.set("min", String(minPrice));
+    if (maxPrice < 25000) next.set("max", String(maxPrice));
+    if (minRating > 0) next.set("rating", String(minRating));
+    if (sortBy) next.set("sort", sortBy);
+    next.set("page", "0");
+
+    setSearchParams(next);
     setPage(0);
+
+    setLoading(true);
     try {
-      const params = { page: 0, size: 100 };
+      const params = {
+        page: 0,
+        size: 12,
+      };
+
       if (city.trim()) params.city = city.trim();
+      if (checkIn) params.checkIn = checkIn;
+      if (checkOut) params.checkOut = checkOut;
+      if (guests > 0) params.capacity = guests;
+      if (minPrice > 0) params.min = minPrice;
+      if (maxPrice < 25000) params.max = maxPrice;
       if (minRating > 0) params.rating = minRating;
 
       const data = await searchHotels(params);
@@ -198,33 +220,25 @@ export default function Hotels() {
   };
 
   const filtered = useMemo(() => {
-    let list = hotels
-      .filter((h) => !city || h.city?.toLowerCase().includes(city.toLowerCase()))
-      .filter((h) => (h.rating || 0) >= minRating)
-      .filter((h) => h.minPrice == null || h.minPrice <= maxPrice)
-      .map((h) => {
-        const coords = CITY_COORDS[h.city] || CITY_COORDS[h.state];
-        const distance =
-          userLocation && coords
-            ? getDistance(userLocation.lat, userLocation.lng, coords.lat, coords.lng)
-            : null;
+    let list = hotels.map((h) => {
+      const coords = CITY_COORDS[h.city] || CITY_COORDS[h.state];
+      const distance =
+        userLocation && coords
+          ? getDistance(userLocation.lat, userLocation.lng, coords.lat, coords.lng)
+          : null;
 
-        return {
-          ...h,
-          lat: coords?.lat,
-          lng: coords?.lng,
-          distance,
-        };
-      });
+      return {
+        ...h,
+        lat: coords?.lat,
+        lng: coords?.lng,
+        distance,
+      };
+    });
 
     if (sortBy === "rating") {
       list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === "priceLow") {
-      list.sort(
-        (a, b) =>
-          (a.minPrice ?? Number.MAX_SAFE_INTEGER) -
-          (b.minPrice ?? Number.MAX_SAFE_INTEGER)
-      );
+      list.sort((a, b) => (a.minPrice ?? Number.MAX_SAFE_INTEGER) - (b.minPrice ?? Number.MAX_SAFE_INTEGER));
     } else if (sortBy === "priceHigh") {
       list.sort((a, b) => (b.minPrice ?? -1) - (a.minPrice ?? -1));
     } else if (sortBy === "distance") {
@@ -232,7 +246,7 @@ export default function Hotels() {
     }
 
     return list;
-  }, [hotels, city, minRating, maxPrice, sortBy, userLocation]);
+  }, [hotels, sortBy, userLocation]);
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
@@ -252,7 +266,7 @@ export default function Hotels() {
               Explore Hotels
             </h1>
             <p style={{ margin: "6px 0 0", color: "var(--text2)" }}>
-              Browse live hotel data from your database
+              Search by destination, dates, guests and price
             </p>
           </div>
 
@@ -288,12 +302,50 @@ export default function Hotels() {
               marginBottom: 24,
             }}
           >
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Search city"
-              className="input"
-            />
+            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <MapPin size={16} />
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="City"
+                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+              />
+            </div>
+
+            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Calendar size={16} />
+              <input
+                type="date"
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+              />
+            </div>
+
+            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Calendar size={16} />
+              <input
+                type="date"
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+              />
+            </div>
+
+            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Users size={16} />
+              <select
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n} Guest{n > 1 ? "s" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <select value={minRating} onChange={(e) => setMinRating(Number(e.target.value))} className="input">
               <option value={0}>All ratings</option>
@@ -308,6 +360,21 @@ export default function Hotels() {
               <option value="priceHigh">Price: high to low</option>
               <option value="distance">Nearest first</option>
             </select>
+
+            <div>
+              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}>
+                Min price: ₹{minPrice.toLocaleString()}
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="25000"
+                step="500"
+                value={minPrice}
+                onChange={(e) => setMinPrice(Number(e.target.value))}
+                style={{ width: "100%" }}
+              />
+            </div>
 
             <div>
               <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}>
@@ -347,7 +414,7 @@ export default function Hotels() {
               scrollWheelZoom
             >
               <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
+                attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {filtered
@@ -367,14 +434,12 @@ export default function Hotels() {
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                           <span style={{ color: "var(--primary)", fontWeight: 700 }}>
-                            {h.minPrice != null
-                              ? `₹${h.minPrice.toLocaleString()}/night`
-                              : "Price unavailable"}
+                            {h.minPrice != null ? `₹${h.minPrice.toLocaleString()}/night` : "Price unavailable"}
                           </span>
                           <span style={{ color: "#FFB400" }}>★ {h.rating || "—"}</span>
                         </div>
                         <button
-                          onClick={() => navigate(`/rooms/${h.id}`)}
+                          onClick={() => navigate(`/rooms/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`)}
                           style={{
                             width: "100%",
                             padding: "9px",
@@ -412,9 +477,23 @@ export default function Hotels() {
             <div style={{ fontSize: 52, marginBottom: 14 }}>🔍</div>
             <h3 style={{ marginBottom: 8 }}>No hotels found</h3>
             <p style={{ color: "var(--text2)", marginBottom: 18 }}>
-              Add hotels in your admin panel or broaden the search.
+              Try changing destination, dates, price, or guest count.
             </p>
-            <button className="btn btn-primary" onClick={loadHotels}>Reload</button>
+            <button className="btn btn-primary" onClick={() => {
+              setCity("");
+              setCheckIn("");
+              setCheckOut("");
+              setGuests(1);
+              setMinPrice(0);
+              setMaxPrice(25000);
+              setMinRating(0);
+              setSortBy("rating");
+              setPage(0);
+              setSearchParams(new URLSearchParams());
+              loadHotels();
+            }}>
+              Reset Filters
+            </button>
           </div>
         ) : (
           <>
@@ -425,7 +504,7 @@ export default function Hotels() {
                 return (
                   <div
                     key={hotel.id}
-                    onClick={() => navigate(`/rooms/${hotel.id}`)}
+                    onClick={() => navigate(`/rooms/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`)}
                     style={{
                       background: "var(--surface)",
                       border: "1px solid var(--border)",
@@ -474,6 +553,11 @@ export default function Hotels() {
                       <div style={{ color: "var(--text2)", marginBottom: 10 }}>
                         <MapPin size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />
                         {hotel.city}, {hotel.state}
+                        {hotel.distance != null && (
+                          <span style={{ float: "right", color: "var(--primary)", fontWeight: 600 }}>
+                            {hotel.distance} km
+                          </span>
+                        )}
                       </div>
 
                       <p style={{ color: "var(--text2)", minHeight: 42 }}>
@@ -484,9 +568,7 @@ export default function Hotels() {
                         <div>
                           <div style={{ fontSize: 13, color: "var(--text3)" }}>Starting from</div>
                           <div style={{ fontSize: 20, fontWeight: 800, color: "var(--primary)" }}>
-                            {hotel.minPrice != null
-                              ? `₹${hotel.minPrice.toLocaleString()}`
-                              : "Price unavailable"}
+                            {hotel.minPrice != null ? `₹${hotel.minPrice.toLocaleString()}` : "Price unavailable"}
                           </div>
                         </div>
 
