@@ -25,22 +25,36 @@ API.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      localStorage.removeItem("favorites");
+
+      if (
+        window.location.pathname !== "/login" &&
+        window.location.pathname !== "/signup"
+      ) {
+        window.location.assign("/login");
+      }
     }
     return Promise.reject(err);
   }
 );
 
-// Wrapped ApiResponse endpoints
-export const getHotels = (params) => API.get("/hotels", { params }).then((r) => r.data.data);
-export const getHotelById = (id) => API.get(`/hotels/${id}`).then((r) => r.data.data);
+export const getHotels = (params) =>
+  API.get("/hotels", { params }).then((r) => r.data.data);
+
+export const getHotelById = (id) =>
+  API.get(`/hotels/${id}`).then((r) => r.data.data);
+
 export const searchHotels = (params) =>
   API.get("/hotels/advanced-search", { params }).then((r) => r.data.data);
+
 export const getTopHotels = (params) =>
   API.get("/hotels/top", { params }).then((r) => r.data.data);
 
 export const getRoomsByHotel = (hotelId) =>
   API.get(`/rooms/hotel/${hotelId}`).then((r) => r.data.data);
+
+export const getAvailableRooms = (checkIn, checkOut) =>
+  API.get("/rooms/available", { params: { checkIn, checkOut } }).then((r) => r.data.data);
 
 export const createBooking = (data) =>
   API.post("/bookings", data).then((r) => r.data.data);
@@ -66,6 +80,12 @@ export const getAdminStats = () =>
 export const getAllBookings = () =>
   API.get("/bookings").then((r) => r.data.data);
 
+export const getAllUsers = () =>
+  API.get("/users").then((r) => r.data);
+
+export const deleteUser = (id) =>
+  API.delete(`/users/${id}`).then((r) => r.data);
+
 export const addHotel = (data) =>
   API.post("/hotels", data).then((r) => r.data.data);
 
@@ -75,27 +95,16 @@ export const deleteHotel = (id) =>
 export const addRoom = (data) =>
   API.post("/rooms", data).then((r) => r.data.data);
 
-export const getAvailableRooms = (checkIn, checkOut) =>
-  API.get("/rooms/available", { params: { checkIn, checkOut } }).then((r) => r.data.data);
+export const getAllHotels = () =>
+  API.get("/hotels", { params: { page: 0, size: 100 } }).then((r) => {
+    const d = r.data?.data;
+    return d?.content || [];
+  });
 
 export const addRating = (data) =>
   API.post("/ratings", data).then((r) => r.data.data);
 
 export const getRatings = (hotelId) =>
   API.get(`/ratings/${hotelId}`).then((r) => r.data.data);
-
-// Plain list/string endpoints
-export const getAllUsers = () =>
-  API.get("/users").then((r) => r.data);
-
-export const deleteUser = (id) =>
-  API.delete(`/users/${id}`).then((r) => r.data);
-
-// Hotels helper for admin dashboard
-export const getAllHotels = () =>
-  API.get("/hotels?size=100").then((r) => {
-    const d = r.data?.data;
-    return d?.content || (Array.isArray(d) ? d : []);
-  });
 
 export default API;

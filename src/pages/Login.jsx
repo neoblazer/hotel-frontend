@@ -59,16 +59,22 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+	<div
+	  style={{
+	    minHeight: "100vh",
+	    display: "grid",
+	    gridTemplateColumns: window.innerWidth <= 900 ? "1fr" : "1fr 1fr",
+	  }}
+	>
       {/* Left visual */}
       <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+	  style={{
+	    position: "relative",
+	    overflow: "hidden",
+	    display: window.innerWidth <= 900 ? "none" : "flex",
+	    alignItems: "center",
+	    justifyContent: "center",
+	  }}
       >
         <div
           style={{

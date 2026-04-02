@@ -9,15 +9,33 @@ export default function PaymentPage() {
   const location = useLocation();
   const toast = useToast();
 
-  const booking = location.state || {
-    amount: 5000,
-    hotelName: "Sample Hotel",
-    roomName: "Deluxe Room",
-    nights: 1,
-    checkIn: "2025-06-01",
-    checkOut: "2025-06-02",
-    bookingId: null,
-  };
+  const booking = location.state || null;
+  if (!booking) {
+    return (
+      <div style={{ paddingTop: 90, minHeight: "100vh", background: "var(--bg)" }}>
+        <div className="container">
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 18,
+              padding: 40,
+              textAlign: "center",
+              color: "var(--text)",
+            }}
+          >
+            <h2 style={{ marginBottom: 10 }}>No payment session found</h2>
+            <p style={{ color: "var(--text2)", marginBottom: 20 }}>
+              Please create a booking first.
+            </p>
+            <button className="btn btn-primary" onClick={() => navigate("/hotels")}>
+              Browse Hotels
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const [method, setMethod] = useState("card"); // card | upi | qr
   const [card, setCard] = useState({ number: "", expiry: "", cvv: "", name: "" });
@@ -25,7 +43,7 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
 
-  const amount = booking?.amount || 5000;
+  const amount = booking?.amount || 0;
 
   const paytmQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
     `upi://pay?pa=8008152284@ptsbi&pn=SmartStay Vizag&am=${amount}&cu=INR&tn=Hotel Booking Payment`
@@ -85,7 +103,7 @@ export default function PaymentPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.15fr 0.85fr",
+            gridTemplateColumns: window.innerWidth <= 900 ? "1fr" : "1.15fr 0.85fr",
             gap: 28,
           }}
         >

@@ -42,7 +42,8 @@ export default function Signup() {
   const [errors, setErrors]   = useState({});
   const [agreed, setAgreed]   = useState(false);
 
-  const setField = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
+  const setField = (k) => (e) =>
+    setForm((p) => ({ ...p, [k]: e.target.value }));
 
   const validate = () => {
     const e = {};
@@ -76,9 +77,21 @@ export default function Signup() {
   };
 
   return (
-    <div style={{ minHeight:"100vh", display:"grid", gridTemplateColumns:"1fr 1fr" }}>
+	<div
+	  style={{
+	    minHeight: "100vh",
+	    display: "grid",
+	    gridTemplateColumns: window.innerWidth <= 900 ? "1fr" : "1fr 1fr",
+	  }}
+	>
       {/* Left visual */}
-      <div style={{ position:"relative", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div 	  style={{
+	    position: "relative",
+	    overflow: "hidden",
+	    display: window.innerWidth <= 900 ? "none" : "flex",
+	    alignItems: "center",
+	    justifyContent: "center",
+	  }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:"url(https://images.unsplash.com/photo-1551882547-ff40c4a49f67?w=800&q=80)", backgroundSize:"cover", backgroundPosition:"center" }}/>
         <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg, rgba(17,24,39,0.9) 0%, rgba(14,165,233,0.3) 100%)" }}/>
         <div style={{ position:"relative", zIndex:1, color:"white", maxWidth:400, padding:60 }}>

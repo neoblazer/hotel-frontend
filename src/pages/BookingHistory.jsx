@@ -4,20 +4,8 @@ import { Calendar, X, RefreshCw } from "lucide-react";
 import { getMyBookings, cancelBooking, getBookingSummary } from "../services/api";
 import { useToast } from "../context/ToastContext";
 
-const HOTEL_IMAGES = {
-  Taj: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=300&q=70",
-  Grand: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=300&q=70",
-  ITC: "https://images.unsplash.com/photo-1551882547-ff40c4a49f67?w=300&q=70",
-  Beach: "https://images.unsplash.com/photo-1501117716987-c8e1ecb210e9?w=300&q=70",
-  default: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300&q=70",
-};
-
-const getImg = (name = "") => {
-  for (const [k, v] of Object.entries(HOTEL_IMAGES)) {
-    if (name.includes(k)) return v;
-  }
-  return HOTEL_IMAGES.default;
-};
+const fallbackImage =
+  "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=80";
 
 const nightsBetween = (a, b) => {
   if (!a || !b) return 0;
@@ -280,7 +268,7 @@ export default function BookingHistory() {
                   key={b.id}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "220px 1fr",
+                    gridTemplateColumns: window.innerWidth <= 768 ? "1fr" : "220px 1fr",
                     gap: 18,
                     background: "var(--surface)",
                     border: "1px solid var(--border)",
@@ -290,7 +278,7 @@ export default function BookingHistory() {
                   }}
                 >
                   <img
-                    src={getImg(b.hotelName)}
+                    src={b.hotelImageUrl || fallbackImage}
                     alt={b.hotelName}
                     style={{ width: "100%", height: "100%", minHeight: 180, objectFit: "cover" }}
                   />
