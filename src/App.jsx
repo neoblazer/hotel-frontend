@@ -12,7 +12,8 @@ import BookingSuccess from "./pages/BookingSuccess";
 import BookingHistory from "./pages/BookingHistory";
 import Wishlist from "./pages/Wishlist";
 import AdminDashboard from "./pages/AdminDashboard";
-
+import Destinations from "./pages/Destinations";
+import Deals from "./pages/Deals";
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { isLoggedIn, isAdmin } = useAuth();
   if (!isLoggedIn) return <Navigate to="/login" replace />;
@@ -39,6 +40,7 @@ function AppRoutes() {
     <>
       <Navbar />
       <Routes>
+	  
         <Route path="/" element={<Home />} />
         <Route path="/hotels" element={<Hotels />} />
         <Route path="/rooms/:hotelId" element={<Rooms />} />
@@ -50,7 +52,8 @@ function AppRoutes() {
         <Route path="/booking-success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><BookingHistory /></ProtectedRoute>} />
         <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
-
+		<Route path="/destinations" element={<Destinations />} />
+		<Route path="/deals" element={<Deals />} />
         <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
 
         <Route path="*" element={

@@ -433,7 +433,37 @@ export default function Home() {
               <Search size={18} /> Search
             </button>
           </div>
+		  {/* CTA BUTTONS */}
+		  <div
+		    style={{
+		      display: "flex",
+		      justifyContent: "center",
+		      gap: 16,
+		      flexWrap: "wrap",
+		      marginTop: 20,
+		    }}
+		  >
+		    <button
+		      className="btn btn-primary"
+		      onClick={() => navigate("/hotels")}
+		    >
+		      Search Hotels
+		    </button>
 
+		    <button
+		      className="btn btn-outline"
+		      onClick={() => navigate("/deals")}
+		    >
+		      Explore Deals
+		    </button>
+
+		    <button
+		      className="btn btn-outline"
+		      onClick={() => navigate("/destinations")}
+		    >
+		      Browse Destinations
+		    </button>
+		  </div>
           <div
             style={{
               display: "flex",
@@ -517,7 +547,7 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => navigate("/hotels?section=destinations")}
+              onClick={() => navigate("/destinations")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -647,7 +677,7 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => navigate("/hotels?deal=top-rated")}
+              onClick={() => navigate("/deals")}
               className="btn btn-outline btn-sm"
             >
               View top deals <ArrowRight size={15} />
@@ -985,7 +1015,7 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => navigate("/signup")}
+              onClick={() => navigate("/deals")}
               style={{
                 padding: "16px 36px",
                 borderRadius: 99,
@@ -1004,7 +1034,7 @@ export default function Home() {
                 (e.currentTarget.style.borderColor = "rgba(255,255,255,0.6)")
               }
             >
-              Create Free Account
+              View Deals
             </button>
           </div>
         </div>

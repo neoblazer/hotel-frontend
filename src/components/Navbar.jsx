@@ -97,14 +97,14 @@ export default function Navbar() {
 
   const desktopLinks = [
     { label: "Hotels", to: "/hotels" },
-    { label: "Destinations", to: "/hotels?section=destinations" },
-    { label: "Deals", to: "/hotels?deal=top-rated" },
+    { label: "Destinations", to: "/destinations" },
+    { label: "Deals", to: "/deals" },
   ];
 
   const mobileLinks = [
     { label: "Hotels", to: "/hotels" },
-    { label: "Destinations", to: "/hotels?section=destinations" },
-    { label: "Deals", to: "/hotels?deal=top-rated" },
+    { label: "Destinations", to: "/destinations" },
+    { label: "Deals", to: "/deals" },
     ...(isLoggedIn ? [{ label: "Wishlist", to: "/wishlist" }] : []),
     ...(isLoggedIn ? [{ label: "My Bookings", to: "/history" }] : []),
   ];
