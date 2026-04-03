@@ -42,6 +42,8 @@ import { useToast } from "../context/ToastContext";
 
 const COLORS = ["#10B981", "#F59E0B", "#EF4444"];
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 export default function AdminDashboard() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -94,6 +96,14 @@ export default function AdminDashboard() {
 
       if (statsRes.status === "fulfilled" && statsRes.value) {
         setStats(statsRes.value);
+      } else {
+        setStats({
+          totalUsers: 0,
+          totalHotels: 0,
+          totalRooms: 0,
+          totalBookings: 0,
+          totalRevenue: 0,
+        });
       }
 
       if (bookingsRes.status === "fulfilled" && Array.isArray(bookingsRes.value)) {
@@ -164,6 +174,7 @@ export default function AdminDashboard() {
       await deleteHotel(id);
       setHotels((prev) => prev.filter((h) => h.id !== id));
       toast.success("Hotel deleted successfully");
+      loadAll();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to delete hotel");
     }
@@ -176,6 +187,7 @@ export default function AdminDashboard() {
       await deleteUser(id);
       setUsers((prev) => prev.filter((u) => u.id !== id));
       toast.success("User deleted successfully");
+      loadAll();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to delete user");
     }
@@ -189,7 +201,8 @@ export default function AdminDashboard() {
       const guest = b.userName?.toLowerCase() || "";
       const hotel = b.hotelName?.toLowerCase() || "";
       const room = b.roomType?.toLowerCase() || "";
-      return guest.includes(q) || hotel.includes(q) || room.includes(q);
+      const status = b.status?.toLowerCase() || "";
+      return guest.includes(q) || hotel.includes(q) || room.includes(q) || status.includes(q);
     });
   }, [bookings, search]);
 
@@ -229,14 +242,40 @@ export default function AdminDashboard() {
     ];
   }, [bookings]);
 
-  const monthlyData = [
-    { month: "Jan", revenue: 120000, bookings: 6 },
-    { month: "Feb", revenue: 150000, bookings: 8 },
-    { month: "Mar", revenue: 180000, bookings: 10 },
-    { month: "Apr", revenue: 220000, bookings: 12 },
-    { month: "May", revenue: 260000, bookings: 14 },
-    { month: "Jun", revenue: stats.totalRevenue || 0, bookings: stats.totalBookings || 0 },
-  ];
+  const monthlyData = useMemo(() => {
+    const now = new Date();
+    const points = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const monthIndex = d.getMonth();
+
+      const monthBookings = bookings.filter((b) => {
+        if (!b.checkInDate) return false;
+        const bd = new Date(b.checkInDate);
+        return (
+          bd.getFullYear() === year &&
+          bd.getMonth() === monthIndex &&
+          b.status !== "CANCELLED"
+        );
+      });
+
+      points.push({
+        month: MONTHS[monthIndex],
+        bookings: monthBookings.length,
+        revenue: monthBookings.reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0),
+      });
+    }
+
+    return points;
+  }, [bookings]);
+
+  const recentBookings = useMemo(() => {
+    return [...bookings]
+      .sort((a, b) => new Date(b.checkInDate || 0) - new Date(a.checkInDate || 0))
+      .slice(0, 5);
+  }, [bookings]);
 
   const NAV = [
     { id: "overview", icon: <LayoutDashboard size={17} />, label: "Overview" },
@@ -284,376 +323,268 @@ export default function AdminDashboard() {
       value: `₹${(stats.totalRevenue || 0).toLocaleString()}`,
       icon: <DollarSign size={20} />,
       bg: "#EFF6FF",
-      color: "#2563EB",
+      color: "#0284C7",
     },
   ];
 
+  if (loading) {
+    return (
+      <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--bg)" }}>
+        <div className="container" style={{ paddingTop: 28 }}>
+          <div className="skeleton" style={{ height: 48, width: 260, marginBottom: 24 }} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 18, marginBottom: 22 }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="skeleton" style={{ height: 120, borderRadius: 18 }} />
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 22 }}>
+            <div className="skeleton" style={{ height: 320, borderRadius: 18 }} />
+            <div className="skeleton" style={{ height: 320, borderRadius: 18 }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", minHeight: "100vh" }}>
-      <aside
-        style={{
-          background: "#111827",
-          color: "white",
-          display: "flex",
-          flexDirection: "column",
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          overflow: "hidden",
-        }}
-      >
+    <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+      <div className="container" style={{ paddingTop: 28, paddingBottom: 40 }}>
         <div
           style={{
-            padding: "28px 24px 20px",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "'Playfair Display',serif",
-              fontSize: 22,
-              fontWeight: 900,
-              color: "#0EA5E9",
-            }}
-          >
-            SmartStay <span style={{ color: "white" }}>Vizag</span>
-          </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: "rgba(255,255,255,0.35)",
-              marginTop: 4,
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-            }}
-          >
-            Admin Console
-          </div>
-        </div>
-
-        <nav style={{ padding: "16px 12px", flex: 1, overflowY: "auto" }}>
-          <div
-            style={{
-              fontSize: 10,
-              color: "rgba(255,255,255,0.3)",
-              fontWeight: 700,
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-              padding: "8px 12px 10px",
-              marginBottom: 4,
-            }}
-          >
-            Navigation
-          </div>
-
-          {NAV.map((n) => (
-            <div
-              key={n.id}
-              onClick={() => setActiveSection(n.id)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "11px 14px",
-                borderRadius: 10,
-                cursor: "pointer",
-                marginBottom: 2,
-                transition: "all .2s",
-                fontSize: 14,
-                fontWeight: 600,
-                background: activeSection === n.id ? "rgba(14,165,233,0.15)" : "transparent",
-                borderLeft: `3px solid ${activeSection === n.id ? "#0EA5E9" : "transparent"}`,
-                color: activeSection === n.id ? "white" : "rgba(255,255,255,0.65)",
-              }}
-            >
-              {n.icon} {n.label}
-              {n.badge > 0 && (
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    background: "#0EA5E9",
-                    color: "white",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: "2px 7px",
-                    borderRadius: 99,
-                  }}
-                >
-                  {n.badge}
-                </span>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        <div style={{ padding: "16px 12px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 14px",
-              marginBottom: 8,
-              borderRadius: 10,
-              background: "rgba(255,255,255,0.05)",
-            }}
-          >
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg,#0EA5E9,#8B5CF6)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontWeight: 700,
-                fontSize: 14,
-                flexShrink: 0,
-              }}
-            >
-              {user?.name?.[0]?.toUpperCase() || "A"}
-            </div>
-            <div style={{ overflow: "hidden" }}>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {user?.name || "Admin"}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.5)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {user?.email || "admin@smartstayvizag.com"}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.1)",
-              background: "rgba(255,255,255,0.04)",
-              color: "white",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
-      </aside>
-
-      <main style={{ background: "var(--bg)", minHeight: "100vh" }}>
-        <div
-          style={{
-            padding: "24px 28px",
-            borderBottom: "1px solid var(--border)",
-            background: "var(--surface)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             gap: 16,
             flexWrap: "wrap",
+            marginBottom: 24,
           }}
         >
           <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 28,
-                fontWeight: 800,
-                color: "var(--text)",
-              }}
-            >
-              {activeSection === "overview" && "Dashboard Overview"}
-              {activeSection === "bookings" && `All Bookings (${bookings.length})`}
-              {activeSection === "hotels" && `Hotels (${hotels.length})`}
-              {activeSection === "users" && `Registered Users (${users.length})`}
+            <h1 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: 34 }}>
+              Admin Dashboard
             </h1>
-            <p style={{ margin: "6px 0 0", color: "var(--text2)" }}>
-              Manage SmartStay Vizag from one place
+            <p style={{ marginTop: 6, color: "var(--text2)" }}>
+              Welcome back{user?.name ? `, ${user.name}` : ""}.
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            {activeSection !== "overview" && (
-              <div style={{ position: "relative" }}>
-                <Search
-                  size={16}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button className="btn btn-primary" onClick={() => setHotelModal(true)}>
+              <Plus size={16} /> Add Hotel
+            </button>
+            <button className="btn btn-outline" onClick={handleLogout}>
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: window.innerWidth <= 900 ? "1fr" : "240px 1fr",
+            gap: 22,
+          }}
+        >
+          {/* Sidebar */}
+          <div
+            className="card"
+            style={{
+              padding: 14,
+              height: "fit-content",
+              position: window.innerWidth <= 900 ? "static" : "sticky",
+              top: 88,
+            }}
+          >
+            {NAV.map((item) => {
+              const active = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
                   style={{
-                    position: "absolute",
-                    left: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "var(--text3)",
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "12px 14px",
+                    marginBottom: 8,
+                    borderRadius: 12,
+                    border: "none",
+                    cursor: "pointer",
+                    background: active ? "var(--primary)" : "transparent",
+                    color: active ? "white" : "var(--text)",
+                    fontWeight: 700,
                   }}
-                />
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {item.icon}
+                    {item.label}
+                  </span>
+                  {item.badge != null && (
+                    <span
+                      style={{
+                        minWidth: 24,
+                        height: 24,
+                        borderRadius: 99,
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: 12,
+                        background: active ? "rgba(255,255,255,0.18)" : "var(--surface2)",
+                        color: active ? "white" : "var(--text2)",
+                        padding: "0 6px",
+                      }}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Main */}
+          <div>
+            {(activeSection === "bookings" || activeSection === "users" || activeSection === "hotels") && (
+              <div
+                className="card"
+                style={{
+                  padding: 14,
+                  marginBottom: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <Search size={16} color="var(--text2)" />
                 <input
+                  className="input"
+                  placeholder={`Search ${activeSection}...`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={`Search ${activeSection}...`}
-                  style={{
-                    width: 280,
-                    padding: "10px 14px 10px 36px",
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--surface)",
-                    color: "var(--text)",
-                    outline: "none",
-                  }}
+                  style={{ border: "none", background: "transparent", boxShadow: "none" }}
                 />
               </div>
             )}
 
-            {activeSection === "hotels" && (
-              <button onClick={() => setHotelModal(true)} className="btn btn-primary">
-                <Plus size={16} /> Add Hotel
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div style={{ padding: 28 }}>
-          {loading ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-              <div className="skeleton" style={{ height: 100, borderRadius: 16 }} />
-              <div className="skeleton" style={{ height: 320, borderRadius: 16 }} />
-              <div className="skeleton" style={{ height: 320, borderRadius: 16 }} />
-            </div>
-          ) : (
-            <>
-              {activeSection === "overview" && (
-                <>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-                      gap: 18,
-                      marginBottom: 28,
-                    }}
-                  >
-                    {statCards.map((card) => (
-                      <div key={card.title} className="card" style={{ padding: 20 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            marginBottom: 14,
-                          }}
-                        >
+            {activeSection === "overview" && (
+              <>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+                    gap: 18,
+                    marginBottom: 22,
+                  }}
+                >
+                  {statCards.map((card) => (
+                    <div key={card.title} className="card" style={{ padding: 18 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 10 }}>
+                            {card.title}
+                          </div>
                           <div
                             style={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: 14,
-                              display: "grid",
-                              placeItems: "center",
-                              background: card.bg,
-                              color: card.color,
+                              fontSize: 28,
+                              fontWeight: 800,
+                              color: "var(--text)",
+                              marginBottom: 4,
                             }}
                           >
-                            {card.icon}
+                            {card.value}
                           </div>
                         </div>
+
                         <div
                           style={{
-                            fontSize: 28,
-                            fontWeight: 800,
-                            color: "var(--text)",
-                            marginBottom: 4,
+                            width: 44,
+                            height: 44,
+                            borderRadius: 14,
+                            display: "grid",
+                            placeItems: "center",
+                            background: card.bg,
+                            color: card.color,
+                            flexShrink: 0,
                           }}
                         >
-                          {card.value}
+                          {card.icon}
                         </div>
-                        <div style={{ fontSize: 14, color: "var(--text2)" }}>{card.title}</div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: window.innerWidth <= 1100 ? "1fr" : "1.35fr 1fr",
+                    gap: 22,
+                    marginBottom: 24,
+                  }}
+                >
+                  <div className="card" style={{ padding: 20, minHeight: 320 }}>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: "var(--text)",
+                        marginBottom: 16,
+                      }}
+                    >
+                      Revenue & Bookings Trend
+                    </div>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <LineChart data={monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.25)" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="revenue" stroke="#0EA5E9" strokeWidth={3} />
+                        <Line type="monotone" dataKey="bookings" stroke="#8B5CF6" strokeWidth={3} />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1.35fr 1fr",
-                      gap: 22,
-                      marginBottom: 24,
-                    }}
-                  >
-                    <div className="card" style={{ padding: 20, minHeight: 320 }}>
-                      <div
-                        style={{
-                          fontSize: 18,
-                          fontWeight: 800,
-                          color: "var(--text)",
-                          marginBottom: 16,
-                        }}
-                      >
-                        Revenue & Bookings Trend
-                      </div>
-                      <ResponsiveContainer width="100%" height={260}>
-                        <LineChart data={monthlyData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,.2)" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line type="monotone" dataKey="revenue" stroke="#0EA5E9" strokeWidth={3} />
-                          <Line type="monotone" dataKey="bookings" stroke="#8B5CF6" strokeWidth={3} />
-                        </LineChart>
-                      </ResponsiveContainer>
+                  <div className="card" style={{ padding: 20, minHeight: 320 }}>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: "var(--text)",
+                        marginBottom: 16,
+                      }}
+                    >
+                      Booking Status Split
                     </div>
-
-                    <div className="card" style={{ padding: 20, minHeight: 320 }}>
-                      <div
-                        style={{
-                          fontSize: 18,
-                          fontWeight: 800,
-                          color: "var(--text)",
-                          marginBottom: 16,
-                        }}
-                      >
-                        Booking Status Split
-                      </div>
-                      <ResponsiveContainer width="100%" height={260}>
-                        <PieChart>
-                          <Pie
-                            data={statusCounts}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={90}
-                            dataKey="value"
-                            label
-                          >
-                            {statusCounts.map((entry, index) => (
-                              <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie
+                          data={statusCounts}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={90}
+                          dataKey="value"
+                          label
+                        >
+                          {statusCounts.map((entry, index) => (
+                            <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
+                </div>
 
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: window.innerWidth <= 1100 ? "1fr" : "1fr 1fr",
+                    gap: 22,
+                  }}
+                >
                   <div className="card" style={{ padding: 20 }}>
                     <div
                       style={{
@@ -674,7 +605,7 @@ export default function AdminDashboard() {
                           { name: "Bookings", value: stats.totalBookings },
                         ]}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,.2)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.25)" />
                         <XAxis dataKey="name" />
                         <YAxis />
                         <Tooltip />
@@ -682,365 +613,296 @@ export default function AdminDashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                </>
-              )}
 
-              {activeSection === "bookings" && (
-                <div className="table-wrap">
-                  <div style={{ overflowX: "auto" }}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Guest</th>
-                          <th>Hotel</th>
-                          <th>Room Type</th>
-                          <th>Check-in</th>
-                          <th>Check-out</th>
-                          <th>Amount</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredBookings.length === 0 ? (
-                          <tr>
-                            <td colSpan="8" style={{ textAlign: "center", padding: 30, color: "var(--text2)" }}>
-                              No bookings found
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredBookings.map((b, idx) => (
-                            <tr key={b.id}>
-                              <td>#{idx + 1}</td>
-                              <td>{b.userName || "—"}</td>
-                              <td>{b.hotelName || "—"}</td>
-                              <td>{b.roomType || "—"}</td>
-                              <td>{b.checkInDate || b.checkIn || "—"}</td>
-                              <td>{b.checkOutDate || b.checkOut || "—"}</td>
-                              <td>₹{(b.totalPrice || b.amount || 0).toLocaleString()}</td>
-                              <td>
-                                <span
-                                  className={`status ${
-                                    b.status === "CONFIRMED"
-                                      ? "status-confirmed"
-                                      : b.status === "CANCELLED"
-                                      ? "status-cancelled"
-                                      : "status-pending"
-                                  }`}
-                                >
-                                  {b.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                  <div className="card" style={{ padding: 20 }}>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: "var(--text)",
+                        marginBottom: 16,
+                      }}
+                    >
+                      Recent Bookings
+                    </div>
+
+                    {recentBookings.length === 0 ? (
+                      <p style={{ color: "var(--text2)" }}>No bookings yet.</p>
+                    ) : (
+                      <div style={{ display: "grid", gap: 12 }}>
+                        {recentBookings.map((b) => (
+                          <div
+                            key={b.id}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: 12,
+                              paddingBottom: 12,
+                              borderBottom: "1px solid var(--border)",
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 700 }}>{b.hotelName}</div>
+                              <div style={{ fontSize: 13, color: "var(--text2)" }}>
+                                {b.userName} • {b.roomType}
+                              </div>
+                            </div>
+                            <div
+                              className={`status ${
+                                b.status === "CONFIRMED"
+                                  ? "status-confirmed"
+                                  : b.status === "PENDING"
+                                  ? "status-pending"
+                                  : "status-cancelled"
+                              }`}
+                            >
+                              {b.status}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
+              </>
+            )}
 
-              {activeSection === "users" && (
+            {activeSection === "bookings" && (
+              <div className="card" style={{ padding: 20 }}>
+                <h2 style={{ marginBottom: 16 }}>Bookings</h2>
                 <div className="table-wrap">
-                  <div style={{ overflowX: "auto" }}>
-                    <table>
-                      <thead>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Hotel</th>
+                        <th>Room</th>
+                        <th>Check In</th>
+                        <th>Check Out</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredBookings.length === 0 ? (
                         <tr>
-                          <th>#</th>
-                          <th>Name</th>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th>Actions</th>
+                          <td colSpan="8" style={{ textAlign: "center", color: "var(--text2)" }}>
+                            No bookings found
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {filteredUsers.length === 0 ? (
-                          <tr>
-                            <td colSpan="5" style={{ textAlign: "center", padding: 30, color: "var(--text2)" }}>
-                              No users found
+                      ) : (
+                        filteredBookings.map((b) => (
+                          <tr key={b.id}>
+                            <td>{b.id}</td>
+                            <td>{b.userName}</td>
+                            <td>{b.hotelName}</td>
+                            <td>{b.roomType}</td>
+                            <td>{b.checkInDate}</td>
+                            <td>{b.checkOutDate}</td>
+                            <td>₹{Number(b.totalPrice || 0).toLocaleString()}</td>
+                            <td>
+                              <span
+                                className={`status ${
+                                  b.status === "CONFIRMED"
+                                    ? "status-confirmed"
+                                    : b.status === "PENDING"
+                                    ? "status-pending"
+                                    : "status-cancelled"
+                                }`}
+                              >
+                                {b.status}
+                              </span>
                             </td>
                           </tr>
-                        ) : (
-                          filteredUsers.map((u, idx) => (
-                            <tr key={u.id}>
-                              <td>#{idx + 1}</td>
-                              <td>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                  <div
-                                    style={{
-                                      width: 34,
-                                      height: 34,
-                                      borderRadius: "50%",
-                                      background: "linear-gradient(135deg,#0EA5E9,#8B5CF6)",
-                                      color: "white",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      fontWeight: 700,
-                                      flexShrink: 0,
-                                    }}
-                                  >
-                                    {u.name?.[0]?.toUpperCase() || "U"}
-                                  </div>
-                                  <div>{u.name}</div>
-                                </div>
-                              </td>
-                              <td>{u.email}</td>
-                              <td>
-                                <span className={`badge ${u.role === "ADMIN" ? "badge-dark" : "badge-info"}`}>
-                                  {u.role}
-                                </span>
-                              </td>
-                              <td>
-                                {u.role !== "ADMIN" && (
-                                  <button
-                                    onClick={() => handleDeleteUser(u.id)}
-                                    style={{
-                                      width: 30,
-                                      height: 30,
-                                      borderRadius: 6,
-                                      border: "1.5px solid #FECACA",
-                                      background: "#FFF1F2",
-                                      color: "#EF4444",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-
-              {activeSection === "hotels" && (
-                <div className="table-wrap">
-                  <div style={{ overflowX: "auto" }}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Hotel</th>
-                          <th>City</th>
-                          <th>State</th>
-                          <th>Rating</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredHotels.length === 0 ? (
-                          <tr>
-                            <td colSpan="6" style={{ textAlign: "center", padding: 30, color: "var(--text2)" }}>
-                              No hotels found
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredHotels.map((h, idx) => (
-                            <tr key={h.id}>
-                              <td>#{idx + 1}</td>
-                              <td>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                  <img
-                                    src={
-                                      h.imageUrl ||
-                                      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300&q=70"
-                                    }
-                                    alt={h.name}
-                                    style={{
-                                      width: 52,
-                                      height: 38,
-                                      borderRadius: 8,
-                                      objectFit: "cover",
-                                      flexShrink: 0,
-                                    }}
-                                  />
-                                  <div>
-                                    <div style={{ fontWeight: 700 }}>{h.name}</div>
-                                    <div style={{ fontSize: 12, color: "var(--text3)" }}>
-                                      {h.description || "No description"}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td>{h.city || "—"}</td>
-                              <td>{h.state || "—"}</td>
-                              <td>{h.rating ?? "—"}</td>
-                              <td>
-                                <button
-                                  onClick={() => handleDeleteHotel(h.id)}
-                                  style={{
-                                    width: 30,
-                                    height: 30,
-                                    borderRadius: 6,
-                                    border: "1.5px solid #FECACA",
-                                    background: "#FFF1F2",
-                                    color: "#EF4444",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-
-      {hotelModal && (
-        <div
-          className="modal-bg"
-          onClick={() => setHotelModal(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15,23,42,.45)",
-            backdropFilter: "blur(4px)",
-            display: "grid",
-            placeItems: "center",
-            zIndex: 1200,
-            padding: 20,
-          }}
-        >
-          <div
-            className="modal-box"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: 520,
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 18,
-              boxShadow: "var(--shadow-xl)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              className="modal-header"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "18px 20px",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <span className="modal-title" style={{ fontWeight: 800, color: "var(--text)" }}>
-                Add New Hotel
-              </span>
-              <div
-                className="modal-close"
-                onClick={() => setHotelModal(false)}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  display: "grid",
-                  placeItems: "center",
-                  cursor: "pointer",
-                  background: "var(--surface2)",
-                }}
-              >
-                <X size={18} />
               </div>
-            </div>
+            )}
 
-            <div className="modal-body" style={{ padding: 20 }}>
-              {[
-                ["Hotel Name *", "name", "The Grand Palace", "text"],
-                ["City *", "city", "Mumbai", "text"],
-                ["State", "state", "Maharashtra", "text"],
-                ["Image URL", "imageUrl", "https://...", "text"],
-                ["Rating (0-5)", "rating", "4.5", "number"],
-              ].map(([label, key, ph, type]) => (
-                <div className="form-group" key={key} style={{ marginBottom: 14 }}>
-                  <label className="form-label" style={{ display: "block", marginBottom: 7, fontWeight: 600 }}>
-                    {label}
-                  </label>
-                  <input
-                    type={type}
-                    value={newHotel[key]}
-                    onChange={(e) => setNewHotel((p) => ({ ...p, [key]: e.target.value }))}
-                    placeholder={ph}
-                    className="form-control"
-                    min={type === "number" ? 0 : undefined}
-                    max={type === "number" ? 5 : undefined}
-                    step={type === "number" ? "0.1" : undefined}
-                    style={{
-                      width: "100%",
-                      padding: "12px 14px",
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      background: "var(--surface)",
-                      color: "var(--text)",
-                      outline: "none",
-                    }}
-                  />
+            {activeSection === "users" && (
+              <div className="card" style={{ padding: 20 }}>
+                <h2 style={{ marginBottom: 16 }}>Users</h2>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" style={{ textAlign: "center", color: "var(--text2)" }}>
+                            No users found
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUsers.map((u) => (
+                          <tr key={u.id}>
+                            <td>{u.id}</td>
+                            <td>{u.name}</td>
+                            <td>{u.email}</td>
+                            <td>{u.role}</td>
+                            <td>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => handleDeleteUser(u.id)}
+                              >
+                                <Trash2 size={14} /> Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
-
-              <div className="form-group">
-                <label className="form-label" style={{ display: "block", marginBottom: 7, fontWeight: 600 }}>
-                  Description
-                </label>
-                <textarea
-                  value={newHotel.description}
-                  onChange={(e) => setNewHotel((p) => ({ ...p, description: e.target.value }))}
-                  placeholder="A luxury hotel offering world-class amenities."
-                  className="form-control"
-                  rows={4}
-                  style={{
-                    width: "100%",
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--surface)",
-                    color: "var(--text)",
-                    outline: "none",
-                    resize: "vertical",
-                  }}
-                />
               </div>
-            </div>
+            )}
 
-            <div
-              className="modal-footer"
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 12,
-                padding: 20,
-                borderTop: "1px solid var(--border)",
-              }}
-            >
-              <button onClick={() => setHotelModal(false)} className="btn btn-outline btn-sm">
-                Cancel
-              </button>
-              <button onClick={handleAddHotel} className="btn btn-primary btn-sm">
-                <Plus size={14} /> Add Hotel
-              </button>
-            </div>
+            {activeSection === "hotels" && (
+              <div className="card" style={{ padding: 20 }}>
+                <h2 style={{ marginBottom: 16 }}>Hotels</h2>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>City</th>
+                        <th>State</th>
+                        <th>Rating</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredHotels.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: "center", color: "var(--text2)" }}>
+                            No hotels found
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredHotels.map((h) => (
+                          <tr key={h.id}>
+                            <td>{h.id}</td>
+                            <td>{h.name}</td>
+                            <td>{h.city}</td>
+                            <td>{h.state}</td>
+                            <td>{h.rating ?? "—"}</td>
+                            <td>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => handleDeleteHotel(h.id)}
+                              >
+                                <Trash2 size={14} /> Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        {hotelModal && (
+          <div className="modal-bg" onClick={() => setHotelModal(false)}>
+            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="modal-title">Add Hotel</div>
+                <button className="modal-close" onClick={() => setHotelModal(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Name</label>
+                  <input
+                    className="form-control"
+                    value={newHotel.name}
+                    onChange={(e) => setNewHotel((p) => ({ ...p, name: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">City</label>
+                    <input
+                      className="form-control"
+                      value={newHotel.city}
+                      onChange={(e) => setNewHotel((p) => ({ ...p, city: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">State</label>
+                    <input
+                      className="form-control"
+                      value={newHotel.state}
+                      onChange={(e) => setNewHotel((p) => ({ ...p, state: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Description</label>
+                  <textarea
+                    className="form-control"
+                    rows="4"
+                    value={newHotel.description}
+                    onChange={(e) => setNewHotel((p) => ({ ...p, description: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Image URL</label>
+                  <input
+                    className="form-control"
+                    value={newHotel.imageUrl}
+                    onChange={(e) => setNewHotel((p) => ({ ...p, imageUrl: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Rating</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    className="form-control"
+                    value={newHotel.rating}
+                    onChange={(e) => setNewHotel((p) => ({ ...p, rating: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button className="btn btn-outline" onClick={() => setHotelModal(false)}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary" onClick={handleAddHotel}>
+                  Add Hotel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
