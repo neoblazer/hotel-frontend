@@ -15,7 +15,7 @@ API.interceptors.request.use(
     if (token) req.headers.Authorization = `Bearer ${token}`;
     return req;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 API.interceptors.response.use(
@@ -35,7 +35,7 @@ API.interceptors.response.use(
       }
     }
     return Promise.reject(err);
-  }
+  },
 );
 
 export const getHotels = (params) =>
@@ -51,7 +51,9 @@ export const getTopHotels = (params) =>
   API.get("/hotels/top", { params }).then((r) => r.data.data);
 
 export const getAvailableRooms = (checkIn, checkOut) =>
-  API.get("/rooms/available", { params: { checkIn, checkOut } }).then((r) => r.data.data);
+  API.get("/rooms/available", { params: { checkIn, checkOut } }).then(
+    (r) => r.data.data,
+  );
 
 export const getRoomsByHotel = (hotelId) =>
   API.get(`/rooms/hotel/${hotelId}`).then((r) => r.data.data);
@@ -80,17 +82,16 @@ export const getAdminStats = () =>
 export const getAllBookings = () =>
   API.get("/bookings").then((r) => r.data.data);
 
-export const getAllUsers = () =>
-  API.get("/users").then((r) => r.data);
+export const getAllUsers = () => API.get("/users").then((r) => r.data.data);
 
 export const deleteUser = (id) =>
-  API.delete(`/users/${id}`).then((r) => r.data);
+  API.delete(`/users/${id}`).then((r) => r.data.data);
 
 export const addHotel = (data) =>
   API.post("/hotels", data).then((r) => r.data.data);
 
 export const deleteHotel = (id) =>
-  API.delete(`/hotels/${id}`).then((r) => r.data);
+  API.delete(`/hotels/${id}`).then((r) => r.data.data);
 
 export const addRoom = (data) =>
   API.post("/rooms", data).then((r) => r.data.data);
@@ -107,8 +108,7 @@ export const addRating = (data) =>
 export const getRatings = (hotelId) =>
   API.get(`/ratings/${hotelId}`).then((r) => r.data.data);
 
-export const getWishlist = () =>
-  API.get("/wishlist").then((r) => r.data.data);
+export const getWishlist = () => API.get("/wishlist").then((r) => r.data.data);
 
 export const addToWishlist = (hotelId) =>
   API.post("/wishlist", { hotelId }).then((r) => r.data.data);
@@ -126,9 +126,11 @@ export const requestPhoneOtp = (phone) =>
   API.post("/auth/phone/request-otp", { phone }).then((r) => r.data.data);
 
 export const verifyPhoneOtp = (phone, otp, name = "") =>
-  API.post("/auth/phone/verify-otp", { phone, otp, name }).then((r) => r.data.data);
+  API.post("/auth/phone/verify-otp", { phone, otp, name }).then(
+    (r) => r.data.data,
+  );
 
 export const firebasePhoneLogin = (phone, name = "") =>
-  API.post("/auth/phone/firebase", { phone, name }).then((res) => res.data.data);
+  API.post("/auth/phone/firebase", { phone, name }).then((r) => r.data.data);
 
 export default API;

@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { MapPin, Search, SlidersHorizontal, Map, Grid, Heart, Calendar, Users } from "lucide-react";
+import {
+  MapPin,
+  Search,
+  SlidersHorizontal,
+  Map,
+  Grid,
+  Heart,
+  Calendar,
+  Users,
+} from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -67,9 +76,15 @@ export default function Hotels() {
   const [checkIn, setCheckIn] = useState(searchParams.get("checkIn") || "");
   const [checkOut, setCheckOut] = useState(searchParams.get("checkOut") || "");
   const [guests, setGuests] = useState(Number(searchParams.get("guests") || 1));
-  const [maxPrice, setMaxPrice] = useState(Number(searchParams.get("max") || 25000));
-  const [minPrice, setMinPrice] = useState(Number(searchParams.get("min") || 0));
-  const [minRating, setMinRating] = useState(Number(searchParams.get("rating") || 0));
+  const [maxPrice, setMaxPrice] = useState(
+    Number(searchParams.get("max") || 25000),
+  );
+  const [minPrice, setMinPrice] = useState(
+    Number(searchParams.get("min") || 0),
+  );
+  const [minRating, setMinRating] = useState(
+    Number(searchParams.get("rating") || 0),
+  );
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "rating");
   const [userLocation, setUserLocation] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
@@ -89,8 +104,9 @@ export default function Hotels() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (p) => setUserLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => {}
+        (p) =>
+          setUserLocation({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => {},
       );
     }
   }, []);
@@ -108,7 +124,13 @@ export default function Hotels() {
     setLoading(true);
     try {
       const hasAdvanced =
-        city.trim() || checkIn || checkOut || guests > 1 || minPrice > 0 || maxPrice < 25000 || minRating > 0;
+        city.trim() ||
+        checkIn ||
+        checkOut ||
+        guests > 1 ||
+        minPrice > 0 ||
+        maxPrice < 25000 ||
+        minRating > 0;
 
       const params = {
         page,
@@ -123,7 +145,9 @@ export default function Hotels() {
       if (checkIn) params.checkIn = checkIn;
       if (checkOut) params.checkOut = checkOut;
 
-      const data = hasAdvanced ? await searchHotels(params) : await getHotels(params);
+      const data = hasAdvanced
+        ? await searchHotels(params)
+        : await getHotels(params);
 
       setHotels(Array.isArray(data?.content) ? data.content : []);
       setTotalPages(data?.totalPages || 1);
@@ -224,7 +248,12 @@ export default function Hotels() {
       const coords = CITY_COORDS[h.city] || CITY_COORDS[h.state];
       const distance =
         userLocation && coords
-          ? getDistance(userLocation.lat, userLocation.lng, coords.lat, coords.lng)
+          ? getDistance(
+              userLocation.lat,
+              userLocation.lng,
+              coords.lat,
+              coords.lng,
+            )
           : null;
 
       return {
@@ -238,7 +267,11 @@ export default function Hotels() {
     if (sortBy === "rating") {
       list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === "priceLow") {
-      list.sort((a, b) => (a.minPrice ?? Number.MAX_SAFE_INTEGER) - (b.minPrice ?? Number.MAX_SAFE_INTEGER));
+      list.sort(
+        (a, b) =>
+          (a.minPrice ?? Number.MAX_SAFE_INTEGER) -
+          (b.minPrice ?? Number.MAX_SAFE_INTEGER),
+      );
     } else if (sortBy === "priceHigh") {
       list.sort((a, b) => (b.minPrice ?? -1) - (a.minPrice ?? -1));
     } else if (sortBy === "distance") {
@@ -249,7 +282,14 @@ export default function Hotels() {
   }, [hotels, sortBy, userLocation]);
 
   return (
-    <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+    <div
+      style={{
+        paddingTop: 70,
+        minHeight: "100vh",
+        background: "var(--bg)",
+        color: "var(--text)",
+      }}
+    >
       <div className="container" style={{ paddingTop: 28, paddingBottom: 50 }}>
         <div
           style={{
@@ -262,7 +302,13 @@ export default function Hotels() {
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: 34 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-serif)",
+                fontSize: 34,
+              }}
+            >
               Explore Hotels
             </h1>
             <p style={{ margin: "6px 0 0", color: "var(--text2)" }}>
@@ -270,8 +316,18 @@ export default function Hotels() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <button className="btn btn-outline" onClick={() => setFiltersOpen((v) => !v)}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <button
+              className="btn btn-outline"
+              onClick={() => setFiltersOpen((v) => !v)}
+            >
               <SlidersHorizontal size={16} /> Filters
             </button>
             <button
@@ -302,42 +358,78 @@ export default function Hotels() {
               marginBottom: 24,
             }}
           >
-            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              className="input"
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
               <MapPin size={16} />
               <input
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="City"
-                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  width: "100%",
+                  background: "transparent",
+                  color: "var(--text)",
+                }}
               />
             </div>
 
-            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              className="input"
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
               <Calendar size={16} />
               <input
                 type="date"
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
-                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  width: "100%",
+                  background: "transparent",
+                  color: "var(--text)",
+                }}
               />
             </div>
 
-            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              className="input"
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
               <Calendar size={16} />
               <input
                 type="date"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
-                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  width: "100%",
+                  background: "transparent",
+                  color: "var(--text)",
+                }}
               />
             </div>
 
-            <div className="input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              className="input"
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
               <Users size={16} />
               <select
                 value={guests}
                 onChange={(e) => setGuests(Number(e.target.value))}
-                style={{ border: "none", outline: "none", width: "100%", background: "transparent", color: "var(--text)" }}
+                style={{
+                  border: "none",
+                  outline: "none",
+                  width: "100%",
+                  background: "transparent",
+                  color: "var(--text)",
+                }}
               >
                 {[1, 2, 3, 4, 5, 6].map((n) => (
                   <option key={n} value={n}>
@@ -347,14 +439,22 @@ export default function Hotels() {
               </select>
             </div>
 
-            <select value={minRating} onChange={(e) => setMinRating(Number(e.target.value))} className="input">
+            <select
+              value={minRating}
+              onChange={(e) => setMinRating(Number(e.target.value))}
+              className="input"
+            >
               <option value={0}>All ratings</option>
               <option value={3}>3+ stars</option>
               <option value={4}>4+ stars</option>
               <option value={4.5}>4.5+ stars</option>
             </select>
 
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="input">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="input"
+            >
               <option value="rating">Top rated</option>
               <option value="priceLow">Price: low to high</option>
               <option value="priceHigh">Price: high to low</option>
@@ -362,7 +462,9 @@ export default function Hotels() {
             </select>
 
             <div>
-              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}>
+              <div
+                style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}
+              >
                 Min price: ₹{minPrice.toLocaleString()}
               </div>
               <input
@@ -377,7 +479,9 @@ export default function Hotels() {
             </div>
 
             <div>
-              <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}>
+              <div
+                style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}
+              >
                 Max price: ₹{maxPrice.toLocaleString()}
               </div>
               <input
@@ -426,20 +530,42 @@ export default function Hotels() {
                         <img
                           src={h.imageUrl || fallbackImage}
                           alt={h.name}
-                          style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 10, marginBottom: 10 }}
+                          style={{
+                            width: "100%",
+                            height: 110,
+                            objectFit: "cover",
+                            borderRadius: 10,
+                            marginBottom: 10,
+                          }}
                         />
                         <div style={{ fontWeight: 700 }}>{h.name}</div>
                         <div style={{ fontSize: 13, margin: "4px 0 8px" }}>
                           📍 {h.city}, {h.state}
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                          <span style={{ color: "var(--primary)", fontWeight: 700 }}>
-                            {h.minPrice != null ? `₹${h.minPrice.toLocaleString()}/night` : "Price unavailable"}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: 10,
+                          }}
+                        >
+                          <span
+                            style={{ color: "var(--primary)", fontWeight: 700 }}
+                          >
+                            {h.minPrice != null
+                              ? `₹${h.minPrice.toLocaleString()}/night`
+                              : "Price unavailable"}
                           </span>
-                          <span style={{ color: "#FFB400" }}>★ {h.rating || "—"}</span>
+                          <span style={{ color: "#FFB400" }}>
+                            ★ {h.rating || "—"}
+                          </span>
                         </div>
                         <button
-                          onClick={() => navigate(`/rooms/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`)}
+                          onClick={() =>
+                            navigate(
+                              `/rooms/${h.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`,
+                            )
+                          }
                           style={{
                             width: "100%",
                             padding: "9px",
@@ -460,51 +586,95 @@ export default function Hotels() {
             </MapContainer>
           </div>
         ) : loading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+              gap: 20,
+            }}
+          >
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
+              <div
+                key={i}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  overflow: "hidden",
+                }}
+              >
                 <div className="skeleton" style={{ height: 220 }} />
                 <div style={{ padding: 18 }}>
-                  <div className="skeleton" style={{ height: 16, width: "60%", marginBottom: 12 }} />
-                  <div className="skeleton" style={{ height: 12, width: "40%", marginBottom: 12 }} />
-                  <div className="skeleton" style={{ height: 12, width: "30%" }} />
+                  <div
+                    className="skeleton"
+                    style={{ height: 16, width: "60%", marginBottom: 12 }}
+                  />
+                  <div
+                    className="skeleton"
+                    style={{ height: 12, width: "40%", marginBottom: 12 }}
+                  />
+                  <div
+                    className="skeleton"
+                    style={{ height: 12, width: "30%" }}
+                  />
                 </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "70px 24px", background: "var(--surface)", borderRadius: 18, border: "1px solid var(--border)" }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "70px 24px",
+              background: "var(--surface)",
+              borderRadius: 18,
+              border: "1px solid var(--border)",
+            }}
+          >
             <div style={{ fontSize: 52, marginBottom: 14 }}>🔍</div>
             <h3 style={{ marginBottom: 8 }}>No hotels found</h3>
             <p style={{ color: "var(--text2)", marginBottom: 18 }}>
               Try changing destination, dates, price, or guest count.
             </p>
-            <button className="btn btn-primary" onClick={() => {
-              setCity("");
-              setCheckIn("");
-              setCheckOut("");
-              setGuests(1);
-              setMinPrice(0);
-              setMaxPrice(25000);
-              setMinRating(0);
-              setSortBy("rating");
-              setPage(0);
-              setSearchParams(new URLSearchParams());
-              loadHotels();
-            }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setCity("");
+                setCheckIn("");
+                setCheckOut("");
+                setGuests(1);
+                setMinPrice(0);
+                setMaxPrice(25000);
+                setMinRating(0);
+                setSortBy("rating");
+                setPage(0);
+                setSearchParams(new URLSearchParams());
+                loadHotels();
+              }}
+            >
               Reset Filters
             </button>
           </div>
         ) : (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+                gap: 20,
+              }}
+            >
               {filtered.map((hotel) => {
                 const isFav = wishlistIds.includes(hotel.id);
 
                 return (
                   <div
                     key={hotel.id}
-                    onClick={() => navigate(`/rooms/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`)}
+                    onClick={() =>
+                      navigate(
+                        `/rooms/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`,
+                      )
+                    }
                     style={{
                       background: "var(--surface)",
                       border: "1px solid var(--border)",
@@ -517,7 +687,11 @@ export default function Hotels() {
                       <img
                         src={hotel.imageUrl || fallbackImage}
                         alt={hotel.name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                       <button
                         onClick={(e) => toggleWish(hotel, e)}
@@ -543,32 +717,70 @@ export default function Hotels() {
                     </div>
 
                     <div style={{ padding: 18 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
-                        <h3 style={{ margin: 0, fontSize: 20 }}>{hotel.name}</h3>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <h3 style={{ margin: 0, fontSize: 20 }}>
+                          {hotel.name}
+                        </h3>
                         <div style={{ whiteSpace: "nowrap" }}>
                           <StarRow rating={hotel.rating} />
                         </div>
                       </div>
 
                       <div style={{ color: "var(--text2)", marginBottom: 10 }}>
-                        <MapPin size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />
+                        <MapPin
+                          size={14}
+                          style={{ verticalAlign: "middle", marginRight: 4 }}
+                        />
                         {hotel.city}, {hotel.state}
                         {hotel.distance != null && (
-                          <span style={{ float: "right", color: "var(--primary)", fontWeight: 600 }}>
+                          <span
+                            style={{
+                              float: "right",
+                              color: "var(--primary)",
+                              fontWeight: 600,
+                            }}
+                          >
                             {hotel.distance} km
                           </span>
                         )}
                       </div>
 
                       <p style={{ color: "var(--text2)", minHeight: 42 }}>
-                        {hotel.description || "Comfortable stay with modern amenities."}
+                        {hotel.description ||
+                          "Comfortable stay with modern amenities."}
                       </p>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, flexWrap: "wrap", gap: 10 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: 14,
+                          flexWrap: "wrap",
+                          gap: 10,
+                        }}
+                      >
                         <div>
-                          <div style={{ fontSize: 13, color: "var(--text3)" }}>Starting from</div>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--primary)" }}>
-                            {hotel.minPrice != null ? `₹${hotel.minPrice.toLocaleString()}` : "Price unavailable"}
+                          <div style={{ fontSize: 13, color: "var(--text3)" }}>
+                            Starting from
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 20,
+                              fontWeight: 800,
+                              color: "var(--primary)",
+                            }}
+                          >
+                            {hotel.minPrice != null
+                              ? `₹${hotel.minPrice.toLocaleString()}`
+                              : "Price unavailable"}
                           </div>
                         </div>
 
@@ -581,14 +793,37 @@ export default function Hotels() {
             </div>
 
             {totalPages > 1 && (
-              <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 28, flexWrap: "wrap" }}>
-                <button className="btn btn-outline" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 10,
+                  marginTop: 28,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  className="btn btn-outline"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
                   Previous
                 </button>
-                <div style={{ display: "grid", placeItems: "center", minWidth: 90, color: "var(--text2)" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    placeItems: "center",
+                    minWidth: 90,
+                    color: "var(--text2)",
+                  }}
+                >
                   Page {page + 1} / {totalPages}
                 </div>
-                <button className="btn btn-outline" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
+                <button
+                  className="btn btn-outline"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                >
                   Next
                 </button>
               </div>
