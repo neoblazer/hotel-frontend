@@ -21,7 +21,7 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 || err.response?.status === 403) {
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("user");
@@ -35,7 +35,7 @@ API.interceptors.response.use(
       }
     }
     return Promise.reject(err);
-  },
+  }
 );
 
 export const getHotels = (params) =>
